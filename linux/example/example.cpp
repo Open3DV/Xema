@@ -99,7 +99,7 @@ int main()
             } 
 
             //设置相机曝光时间（us）
-            ret_code = DfSetParamCameraExposure(30000);
+            ret_code = DfSetParamCameraExposure(12000);
             if (0 != ret_code)
             {
                 std::cout << "Set Camera Exposure Error!" << std::endl;
