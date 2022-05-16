@@ -23,6 +23,7 @@
     <ClCompile Include="..\gui\PrecisionTest.cpp" />
     <ClCompile Include="..\test\AnalyseError.cpp" />
     <ClCompile Include="..\test\encode.cpp" />
+    <ClCompile Include="..\test\FilterModule.cpp" />
     <ClCompile Include="..\test\LookupTableFunction.cpp" />
     <ClCompile Include="..\test\reconstruct.cpp" />
     <ClCompile Include="..\test\solution.cpp" />
