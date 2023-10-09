@@ -1189,7 +1189,7 @@ int Scan3D::captureRaw08(unsigned char *buff)
 
     unsigned char *img_ptr= new unsigned char[image_width_*image_height_];
 
-    for (int i = 0; i < 26; i++)
+    for (int i = 0; i < 24; i++)
     {
         LOG(INFO)<<"grap "<<i<<" image:";
         if (!camera_->grap(img_ptr))
@@ -1207,7 +1207,7 @@ int Scan3D::captureRaw08(unsigned char *buff)
     if (1 != generate_brightness_model_)
     {
         captureTextureImage(generate_brightness_model_, generate_brightness_exposure_, img_ptr);
-        memcpy(buff + img_size * 18, img_ptr, img_size);
+        memcpy(buff + img_size * 0, img_ptr, img_size);
     }
 
     delete[] img_ptr;
