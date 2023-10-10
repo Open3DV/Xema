@@ -578,6 +578,7 @@ bool CameraBasler::openCamera()
         // CHECK( res );
         res = PylonDeviceSetFloatFeature(hDev_, "Gain", 0.0);
         // CHECK( res );
+         
     }
 
         res = PylonDeviceGetIntegerFeature( hDev_, "Width", &image_width_ );
@@ -721,7 +722,8 @@ bool CameraBasler::setExposure(double val)
     {
         if (val < min_camera_exposure_)
         {
-            val = min_camera_exposure_;
+            // val = min_camera_exposure_;
+            val+= 1000;
         }
     }
 
