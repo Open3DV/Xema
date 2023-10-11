@@ -1022,7 +1022,7 @@ bool LookupTableFunction::rebuildData(cv::Mat unwrap_map_x, int group_num, cv::M
 
 		for (int Xc = 0; Xc < nc; Xc++) {
 			
-			double Xp = dlp_width_ * ptr_x[Xc] / phase_max;
+			double Xp = dlp_width_ * (ptr_x[Xc] - 0*CV_2PI/128.0) / phase_max;
 			double d = 0;
 			
 			if (ptr_m[Xc] == 255 && Xp > 0) {
