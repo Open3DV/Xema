@@ -1481,6 +1481,20 @@ void fisher_filter(float fisher_confidence_val)
 	LOG(INFO)<<"fisher end"; 
 }
 
+void phase_monotonicity_filter(float monotonicity_val)
+{
+	// 传入的monotonicity_val应当在（-10， 2）之间，-10 - monotonicity_val之间的被认为是噪声，传入参数是0 - 100之间的数字
+	monotonicity_val = monotonicity_val / 100. - 0.5;
+	//按照每个像素均独立的思想来组织线程
+	cudaDeviceSynchronize();
+	LOG(INFO)<<"monotonicity start";
+	kernel_monotonicity_filter <<< blocksPerGrid, threadsPerBlock >>> (h_image_height_, h_image_width_, -10, monotonicity_val, d_fisher_mask_, d_unwrap_map_list_[0]);
+	cudaDeviceSynchronize();
+	kernel_removal_phase_base_mask <<< blocksPerGrid, threadsPerBlock >>> (h_image_height_, h_image_width_, d_unwrap_map_list_[0], d_fisher_mask_);
+	cudaDeviceSynchronize();
+	LOG(INFO)<<"monotonicity end";
+}
+
 void depth_filter(float depth_threshold_val)
 {
 	dim3 threadsPerBlock_p(4, 4);

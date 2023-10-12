@@ -166,6 +166,8 @@ bool cuda_normalize_phase(int serial_flag);
 
 void fisher_filter(float fisher_confidence_val);
 
+void phase_monotonicity_filter(float monotonicity_val);
+
 void depth_filter(float depth_threshold_val);
 
   

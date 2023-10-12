@@ -1699,7 +1699,10 @@ int Scan3D::captureFrame06Repetition(int repetition_count)
     delete[] img_ptr;
 
     cuda_handle_repetition_model06(repetition_count); 
- 
+    if (fisher_confidence_val_ > -50)
+    {
+        phase_monotonicity_filter(fisher_confidence_val_ / 2 + 25);
+    }
     cuda_normalize_phase(0); 
     LOG(INFO) << "parallel_cuda_unwrap_phase";
     cuda_generate_pointcloud_base_table();
@@ -1822,7 +1825,10 @@ int Scan3D::captureFrame06RepetitionColor(int repetition_count)
  
 
     cuda_handle_repetition_model06(repetition_count); 
- 
+    if (fisher_confidence_val_ > -50)
+    {
+        phase_monotonicity_filter(fisher_confidence_val_ / 2 + 25);
+    }
     cuda_normalize_phase(0); 
     LOG(INFO) << "parallel_cuda_unwrap_phase";
     cuda_generate_pointcloud_base_table();
@@ -1959,6 +1965,10 @@ int Scan3D::captureFrame06HdrColor()
 
             if (15 == g_i)
             {
+                if (fisher_confidence_val_ > -50)
+                {
+                    phase_monotonicity_filter(fisher_confidence_val_ / 2 + 25);
+                }
                 cuda_normalize_phase(0);
                 cuda_generate_pointcloud_base_table();
                 LOG(INFO) << "cuda_generate_pointcloud_base_table";
@@ -2111,6 +2121,10 @@ int Scan3D::captureFrame06Hdr()
 
             if (15 == g_i)
             {
+                if (fisher_confidence_val_ > -50)
+                {
+                    phase_monotonicity_filter(fisher_confidence_val_ / 2 + 25);
+                }
                 cuda_normalize_phase(0);
                 cuda_generate_pointcloud_base_table();
                 LOG(INFO) << "cuda_generate_pointcloud_base_table";
@@ -2247,7 +2261,10 @@ int Scan3D::captureFrame06RepetitionMono12(int repetition_count)
     // setPixelFormat(8);
 
     cuda_handle_repetition_model06_16(repetition_count);
-
+    if (fisher_confidence_val_ > -50)
+    {
+        phase_monotonicity_filter(fisher_confidence_val_ / 2 + 25);
+    }
     cuda_normalize_phase(0);
     LOG(INFO) << "parallel_cuda_unwrap_phase";
     cuda_generate_pointcloud_base_table(); 
@@ -2373,6 +2390,10 @@ int Scan3D::captureFrame06HdrMono12()
 
             if (15 == g_i)
             {
+                if (fisher_confidence_val_ > -50)
+                {
+                    phase_monotonicity_filter(fisher_confidence_val_ / 2 + 25);
+                }
                 cuda_normalize_phase(0);
                 cuda_generate_pointcloud_base_table();
                 LOG(INFO) << "cuda_generate_pointcloud_base_table";
@@ -2481,6 +2502,10 @@ int Scan3D::captureFrame06Mono12()
 
             if (15 == g_i)
             {
+                if (fisher_confidence_val_ > -50)
+                {
+                    phase_monotonicity_filter(fisher_confidence_val_ / 2 + 25);
+                }
                 cuda_normalize_phase(0);
                 cuda_generate_pointcloud_base_table();
                 LOG(INFO) << "cuda_generate_pointcloud_base_table";
@@ -2604,6 +2629,10 @@ int Scan3D::captureFrame06()
   
         if(15 == i)
         { 
+            if (fisher_confidence_val_ > -50)
+            {
+                phase_monotonicity_filter(fisher_confidence_val_ / 2 + 25);
+            }
             cuda_normalize_phase(0); 
             cuda_generate_pointcloud_base_table();
             LOG(INFO) << "cuda_generate_pointcloud_base_table"; 
@@ -2717,6 +2746,10 @@ int Scan3D::captureFrame06Color()
   
         if(15 == i)
         { 
+            if (fisher_confidence_val_ > -50)
+            {
+                phase_monotonicity_filter(fisher_confidence_val_ / 2 + 25);
+            }
             cuda_normalize_phase(0); 
             cuda_generate_pointcloud_base_table();
             LOG(INFO) << "cuda_generate_pointcloud_base_table"; 
