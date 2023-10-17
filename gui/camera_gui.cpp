@@ -83,7 +83,7 @@ void camera_gui::do_action_load_camera_config()
 		return;
 	}
 
-	last_config_path_ = path;
+	last_config_path_ = path.toLocal8Bit();
 
 	bool ret = ui.tab_capture->loadSettingData(path);
 

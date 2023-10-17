@@ -745,6 +745,10 @@
         <source>关闭</source>
         <translation>Close</translation>
     </message>
+    <message>
+        <source>升级失败,请选择正确的固件！</source>
+        <translation type="unfinished">Failure to upgrade,Please select the right firmware!</translation>
+    </message>
 </context>
 <context>
     <name>WaitingGuiClass</name>

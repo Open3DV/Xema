@@ -746,6 +746,10 @@
         <source>关闭</source>
         <translation>关闭</translation>
     </message>
+    <message>
+        <source>升级失败,请选择正确的固件！</source>
+        <translation type="unfinished">升级失败,请选择正确的固件！</translation>
+    </message>
 </context>
 <context>
     <name>WaitingGuiClass</name>

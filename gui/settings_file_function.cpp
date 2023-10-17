@@ -81,7 +81,7 @@ SettingsFileFunction::~SettingsFileFunction()
 bool SettingsFileFunction::loadProcessingSettingsFile(QString path)
 {
 	//打开文件
-	QFile file(path);
+	QFile file(path.toLocal8Bit());
 	file.open(QIODevice::ReadOnly);
 	QByteArray data = file.readAll();
 	file.close();
@@ -432,7 +432,7 @@ bool SettingsFileFunction::loadProcessingSettingsFile(QString path)
 bool SettingsFileFunction::saveProcessingSettingsFile(QString path)
 {
 
-	QFile file(path);
+	QFile file(path.toLocal8Bit());
 	if (!file.open(QIODevice::WriteOnly)) {
 		qDebug() << "File open error";
 	}

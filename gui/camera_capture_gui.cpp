@@ -70,6 +70,39 @@ CameraCaptureGui::CameraCaptureGui(QWidget* parent)
 	if (!dir.exists(path))
 	{
 		bool res = dir.mkpath(path);
+
+		//if (!res)
+		//{ 
+		//	#ifdef _WIN32 
+		//	res = dir.mkpath("../TestData");
+		//	dir.setPath("../TestData");
+		//	if (res)
+		//	{
+		//		addLogMessage(tr("创建TestData文件夹: ") + dir.absolutePath());
+		//	}
+		//	else
+		//	{
+		//		addLogMessage(tr("创建TestData文件夹失败: ") + dir.absolutePath());
+		//	}
+
+		//	#elif __linux
+		//	last_path_ = "/usr/share/TestData";
+		//	res = dir.mkpath(last_path_);
+		//	dir.setPath(last_path_);
+		//	 
+		//	if (res)
+		//	{
+		//		addLogMessage(tr("创建TestData文件夹: ") + dir.absolutePath());
+		//	}
+		//	else
+		//	{
+		//		addLogMessage(tr("创建TestData文件夹失败: ") + dir.absolutePath());
+		//	}
+
+		//	#endif  
+		//}
+
+
 	}
 
   
@@ -431,7 +464,7 @@ bool CameraCaptureGui::saveOneFrameData(QString path_name)
 
 bool CameraCaptureGui::loadSettingData(QString path)
 {
-	bool ret = config_system_param_machine_.loadProcessingSettingsFile(path);
+	bool ret = config_system_param_machine_.loadProcessingSettingsFile(path.toLocal8Bit());
 	if (!ret)
 	{
 		return false;
@@ -457,7 +490,7 @@ bool CameraCaptureGui::saveSettingData(QString path)
 	config_system_param_machine_.setFirmwareConfigData(firmware_config_param_);
 	config_system_param_machine_.setGuiConfigData(processing_gui_settings_data_);
 
-	bool ok = config_system_param_machine_.saveProcessingSettingsFile(path);
+	bool ok = config_system_param_machine_.saveProcessingSettingsFile(path.toLocal8Bit());
 
 	return ok;
 }
