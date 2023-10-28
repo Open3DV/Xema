@@ -1804,7 +1804,11 @@ int Scan3D::captureFrame06RepetitionColor(int repetition_count)
             else
             {
                 LOG(INFO) << "grad failed!";
-                camera_->streamOff(); 
+                camera_->streamOff();
+                if (i == 0)
+                {
+                    return DF_ERROR_LOST_TRIGGER;
+                } 
 
                 frame_status = DF_ERROR_CAMERA_GRAP;
                 return DF_ERROR_CAMERA_GRAP;
@@ -1936,6 +1940,11 @@ int Scan3D::captureFrame06HdrColor()
             {
 
                 camera_->streamOff();
+                if (i == 0)
+                {
+                    return DF_ERROR_LOST_TRIGGER;
+                }
+
                 return DF_ERROR_CAMERA_GRAP;
             }
             LOG(INFO) << "finished!";
@@ -2693,6 +2702,10 @@ int Scan3D::captureFrame06Color()
         if (!camera_->grap(img.data))
         { 
             camera_->streamOff();
+            if (i == 0)
+            {
+                return DF_ERROR_LOST_TRIGGER;
+            }
             return DF_ERROR_CAMERA_GRAP;
         }
         LOG(INFO)<<"finished!";
