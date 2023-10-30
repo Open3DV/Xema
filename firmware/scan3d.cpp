@@ -1805,7 +1805,7 @@ int Scan3D::captureFrame06RepetitionColor(int repetition_count)
             {
                 LOG(INFO) << "grad failed!";
                 camera_->streamOff();
-                if (i == 0)
+                if (g_i == 0)
                 {
                     return DF_ERROR_LOST_TRIGGER;
                 } 
@@ -1940,7 +1940,7 @@ int Scan3D::captureFrame06HdrColor()
             {
 
                 camera_->streamOff();
-                if (i == 0)
+                if (g_i == 0)
                 {
                     return DF_ERROR_LOST_TRIGGER;
                 }
