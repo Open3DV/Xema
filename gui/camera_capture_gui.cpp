@@ -1213,6 +1213,7 @@ void CameraCaptureGui::do_spin_smoothing_changed(int val)
 		}
 		else
 		{
+			firmware_config_param_.use_bilateral_filter = 1;
 			firmware_config_param_.bilateral_filter_param_d = 2 * val + 1;
 		}
 
