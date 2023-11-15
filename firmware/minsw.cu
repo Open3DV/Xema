@@ -57,6 +57,154 @@ __global__ void kernel_threshold_merge_patterns(int width,int height,unsigned sh
     }
 }
 
+__global__ void kernel_threshold_merge_patterns_with_uncertain(int width,int height,unsigned short * const d_in_pattern, unsigned short * const d_in_threshold,int places,
+unsigned char* const d_out_bin,unsigned char * const d_in_direct,unsigned char * const d_in_global,unsigned char * const d_out_uncertain)
+{
+
+   const unsigned int idx = blockIdx.x * blockDim.x + threadIdx.x;
+	const unsigned int idy = blockIdx.y * blockDim.y + threadIdx.y;
+    const unsigned int offset = idy * width + idx;
+
+    if (idx < width && idy < height)
+    { 
+        unsigned char val = d_out_bin[offset];
+
+        unsigned char mv_i = (7- places);
+
+        unsigned char mask = 1 << mv_i;
+        val = val & (~mask);
+        unsigned char set_bit = 0;
+
+        if (d_in_direct[offset] < 2)
+        {
+            d_out_uncertain[offset] += 4;
+        }
+
+        if (d_in_direct[offset] > d_in_global[offset])
+        {
+            if (d_in_pattern[offset] > d_in_direct[offset])
+            { 
+                set_bit = 1 << mv_i;
+            }
+            // else if (d_in_pattern[offset] < d_in_global[offset])
+            // {
+            //     // ptr_bin[c] = 0;
+            // }
+            else
+            {
+                if (d_in_pattern[offset]> d_in_threshold[offset])
+                { 
+                    set_bit = 1 << mv_i;
+                }
+                // else
+                // { 
+                // }
+
+                d_out_uncertain[offset] += 2;
+            }
+        }
+        else
+        {
+            // if (d_in_pattern[offset] < d_in_direct[offset])
+            // { 
+            // }
+            if (d_in_pattern[offset] > d_in_global[offset])
+            { 
+                set_bit = 1 << mv_i;
+            }
+            else
+            {
+                d_out_uncertain[offset] += 20;
+            }
+        }
+
+        // if(d_in_pattern[offset] > d_in_threshold[offset] )
+        // { 
+        //     set_bit = 1 << mv_i;
+        // }
+ 
+
+        val = val | set_bit;
+        d_out_bin[offset] = val;
+    }
+
+    
+}
+
+
+
+__global__ void kernel_threshold_patterns_with_uncertain(int width,int height,unsigned char * const d_in_pattern, unsigned char * const d_in_threshold,int places,
+unsigned char* const d_out_bin,unsigned char * const d_in_direct,unsigned char * const d_in_global,unsigned char * const d_out_uncertain)
+{
+     const unsigned int idx = blockIdx.x * blockDim.x + threadIdx.x;
+	const unsigned int idy = blockIdx.y * blockDim.y + threadIdx.y;
+    const unsigned int offset = idy * width + idx;
+
+    if (idx < width && idy < height)
+    { 
+        unsigned char val = d_out_bin[offset];
+
+        unsigned char mv_i = (7- places);
+
+        unsigned char mask = 1 << mv_i;
+        val = val & (~mask);
+        unsigned char set_bit = 0;
+
+        if (d_in_direct[offset] < 2)
+        {
+            d_out_uncertain[offset] += 4;
+        }
+
+        if (d_in_direct[offset] > d_in_global[offset])
+        {
+            if (d_in_pattern[offset] > d_in_direct[offset])
+            { 
+                set_bit = 1 << mv_i;
+            }
+            // else if (d_in_pattern[offset] < d_in_global[offset])
+            // {
+            //     // ptr_bin[c] = 0;
+            // }
+            else
+            {
+                if (d_in_pattern[offset]> d_in_threshold[offset])
+                { 
+                    set_bit = 1 << mv_i;
+                }
+                // else
+                // { 
+                // }
+
+                d_out_uncertain[offset] += 2;
+            }
+        }
+        else
+        {
+            // if (d_in_pattern[offset] < d_in_direct[offset])
+            // { 
+            // }
+            if (d_in_pattern[offset] > d_in_global[offset])
+            { 
+                set_bit = 1 << mv_i;
+            }
+            else
+            {
+                d_out_uncertain[offset] += 20;
+            }
+        }
+
+        // if(d_in_pattern[offset] > d_in_threshold[offset] )
+        // { 
+        //     set_bit = 1 << mv_i;
+        // }
+ 
+
+        val = val | set_bit;
+        d_out_bin[offset] = val;
+    }
+
+
+}
  
 __global__ void kernel_threshold_patterns(int width,int height,unsigned char * const d_in_pattern, unsigned char * const d_in_threshold,int places ,unsigned char * const d_out_bin)
 {
@@ -84,8 +232,7 @@ __global__ void kernel_threshold_patterns(int width,int height,unsigned char * c
         d_out_bin[offset] = val;
     }
 }
-
-
+ 
 
 __global__ void kernel_minsw8_to_bin(int width,int height,unsigned char * const minsw8_code,unsigned char * const d_in_minsw8, unsigned char * const d_out_bin)
 {

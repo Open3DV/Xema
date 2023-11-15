@@ -4176,6 +4176,57 @@ int handle_cmd_set_param_generate_brightness(int client_sock)
   
     return DF_SUCCESS;
 }
+ 
+ //设置全局光滤波参数
+int handle_cmd_set_param_global_light_filter(int client_sock)
+{
+   if(check_token(client_sock) == DF_FAILED)
+    {
+	    return DF_FAILED;
+    }
+
+
+    int switch_val = 0;
+ 
+
+    int ret = recv_buffer(client_sock, (char*)(&switch_val), sizeof(int));
+    if(ret == DF_FAILED)
+    {
+        LOG(INFO)<<"send error, close this connection!\n";
+    	return DF_FAILED;
+    }
+
+
+    float b = 0;
+    ret = recv_buffer(client_sock, (char*)(&b), sizeof(float));
+    if(ret == DF_FAILED)
+    {
+        LOG(INFO)<<"send error, close this connection!\n";
+    	return DF_FAILED;
+    }
+
+
+    int threshold = 0;
+    ret = recv_buffer(client_sock, (char*)(&threshold), sizeof(int));
+    if(ret == DF_FAILED)
+    {
+        LOG(INFO)<<"send error, close this connection!\n";
+    	return DF_FAILED;
+    }
+ 
+
+    system_config_settings_machine_.Instance().firwmare_param_.use_global_light_filter = switch_val; 
+    system_config_settings_machine_.Instance().firwmare_param_.global_light_filter_b = b; 
+    system_config_settings_machine_.Instance().firwmare_param_.global_light_filter_threshold = threshold; 
+
+ 
+    LOG(INFO)<<"use_global_light_filter: "<<system_config_settings_machine_.Instance().firwmare_param_.use_global_light_filter; 
+    LOG(INFO)<<"global_light_filter_b: "<<system_config_settings_machine_.Instance().firwmare_param_.global_light_filter_b; 
+    LOG(INFO)<<"global_light_filter_threshold: "<<system_config_settings_machine_.Instance().firwmare_param_.global_light_filter_threshold; 
+         
+
+    return DF_SUCCESS;
+}
 
 
 //设置反射光滤波参数
@@ -4205,6 +4256,42 @@ int handle_cmd_set_param_reflect_filter(int client_sock)
     LOG(INFO)<<"use_reflect_filter: "<<system_config_settings_machine_.Instance().firwmare_param_.use_reflect_filter; 
          
 
+    return DF_SUCCESS;
+}
+
+int handle_cmd_get_param_global_light_filter(int client_sock)
+{
+   if(check_token(client_sock) == DF_FAILED)
+    {
+	    return DF_FAILED;
+    }
+     
+    int ret = send_buffer(client_sock, (char*)(&system_config_settings_machine_.Instance().firwmare_param_.use_global_light_filter), sizeof(int) );
+    if(ret == DF_FAILED)
+    {
+        LOG(INFO)<<"send error, close this connection!\n";
+	    return DF_FAILED;
+    }
+
+    ret = send_buffer(client_sock, (char*)(&system_config_settings_machine_.Instance().firwmare_param_.global_light_filter_b), sizeof(float) );
+    if(ret == DF_FAILED)
+    {
+        LOG(INFO)<<"send error, close this connection!\n";
+	    return DF_FAILED;
+    }
+
+    ret = send_buffer(client_sock, (char*)(&system_config_settings_machine_.Instance().firwmare_param_.global_light_filter_threshold), sizeof(int) );
+    if(ret == DF_FAILED)
+    {
+        LOG(INFO)<<"send error, close this connection!\n";
+	    return DF_FAILED;
+    }
+ 
+  
+    LOG(INFO)<<"use_global_light_filter: "<<system_config_settings_machine_.Instance().firwmare_param_.use_global_light_filter; 
+    LOG(INFO)<<"global_light_filter_b: "<<system_config_settings_machine_.Instance().firwmare_param_.global_light_filter_b; 
+    LOG(INFO)<<"global_light_filter_threshold: "<<system_config_settings_machine_.Instance().firwmare_param_.global_light_filter_threshold; 
+          
     return DF_SUCCESS;
 }
 
@@ -6479,6 +6566,14 @@ int handle_commands(int client_sock)
     case DF_CMD_SET_PARAM_CAPTURE_ENGINE:
         LOG(INFO)<<"DF_CMD_SET_PARAM_CAPTURE_ENGINE"; 
         ret = handle_cmd_set_param_capture_engine(client_sock);
+        break;
+    case DF_CMD_SET_PARAM_GLOBAL_LIGHT_FILTER:
+        LOG(INFO)<<"DF_CMD_SET_PARAM_GLOBAL_LIGHT_FILTER"; 
+        ret = handle_cmd_set_param_global_light_filter(client_sock);
+        break;
+    case DF_CMD_GET_PARAM_GLOBAL_LIGHT_FILTER:
+        LOG(INFO)<<"DF_CMD_GET_PARAM_GLOBAL_LIGHT_FILTER"; 
+        ret = handle_cmd_get_param_global_light_filter(client_sock);
         break;
 	default:
 	    LOG(INFO)<<"DF_CMD_UNKNOWN";

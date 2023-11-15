@@ -67,6 +67,10 @@ struct FirmwareConfigParam
 	float brightness_gain;
 
 	int engine;
+
+	int use_global_light_filter;
+	float global_light_filter_b;
+	int global_light_filter_threshold;
 };
 
 

@@ -177,9 +177,11 @@ int Scan3D::reopenCamera()
 
 int Scan3D::initCache()
 {
-    std::memset(buff_brightness_,0,sizeof(char)*image_width_*image_height_);
-    std::memset(buff_depth_,0,sizeof(float)*image_width_*image_height_);
-    std::memset(buff_pointcloud_,0,sizeof(float)*image_width_*image_height_*3); 
+    std::memset(buff_brightness_, 0, sizeof(char) * image_width_ * image_height_);
+    std::memset(buff_depth_, 0, sizeof(float) * image_width_ * image_height_);
+    std::memset(buff_pointcloud_, 0, sizeof(float) * image_width_ * image_height_ * 3);
+
+
 }
 
 bool Scan3D::cameraIsValid()

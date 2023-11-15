@@ -23,6 +23,15 @@ float * const d_out, float * const confidence);
 
 __global__ void kernel_six_step_phase_shift(int width,int height,unsigned char * const d_in_0, unsigned char * const d_in_1, unsigned char * const d_in_2, unsigned char * const d_in_3,
 unsigned char* const d_in_4,unsigned char* const d_in_5, float * const d_out, float * const confidence);
+
+__global__ void kernel_six_step_phase_shift_with_average(int width,int height,unsigned char * const d_in_0, unsigned char * const d_in_1, unsigned char * const d_in_2, unsigned char * const d_in_3,
+unsigned char* const d_in_4,unsigned char* const d_in_5, float * const d_out, float * const confidence,unsigned char* const average,unsigned char* const brightness);
+
+__global__ void kernel_computre_global_light(int width,int height,unsigned char * const d_in_0, unsigned char * const d_in_1, unsigned char * const d_in_2, unsigned char * const d_in_3,
+unsigned char* const d_in_4,unsigned char* const d_in_5, float b,unsigned char * const direct_out,unsigned char * const global_out,unsigned char * const uncertain_out);
+
+__global__ void kernel_six_step_phase_shift_global(int width,int height,unsigned char * const d_in_0, unsigned char * const d_in_1, unsigned char * const d_in_2, unsigned char * const d_in_3,
+unsigned char* const d_in_4,unsigned char* const d_in_5, float * const d_out, float * const confidence,float b,unsigned char * const direct_out,unsigned char * const global_out);
  
 __global__ void kernel_unwrap_variable_phase(int width,int height,float * const d_in_wrap_abs, float * const d_in_wrap_high,float const rate,float threshold, float * const d_out);
 
@@ -33,6 +42,9 @@ __global__ void kernel_normalize_phase(int width,int height,float * const d_in_u
 __global__ void kernel_merge_six_step_phase_shift(unsigned short * const d_in_0, unsigned short * const d_in_1, unsigned short * const d_in_2, 
 	unsigned short * const d_in_3,unsigned short* const d_in_4,unsigned short* const d_in_5,int repetition_count,
 	uint32_t img_height, uint32_t img_width,float * const d_out, float * const confidence);
+
+__global__ void kernel_merge_computre_global_light(int width,int height,unsigned short * const d_in_0, unsigned short * const d_in_1, unsigned short *  d_in_2, unsigned short * const d_in_3,
+unsigned short* const d_in_4,unsigned short* const d_in_5, int repetition_count,float b,unsigned char * const direct_out,unsigned char * const global_out,unsigned char * const uncertain_out);
     
 __global__ void kernel_merge_four_step_phase_shift(unsigned short * const d_in_0, unsigned short * const d_in_1, unsigned short * const d_in_2, 
 	unsigned short * const d_in_3,int repetition_count,uint32_t img_height, uint32_t img_width,float * const d_out, float * const confidence);

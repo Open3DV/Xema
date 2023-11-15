@@ -109,6 +109,29 @@ __device__ float bilinear_interpolation(float x, float y, int map_width, float *
 
 }
 
+__global__ void kernel_remove_mask_result(int width, int height, unsigned char *const mask, uchar threshold, float *const depth, float *const pointcloud)
+{
+	const unsigned int idx = blockIdx.x * blockDim.x + threadIdx.x;
+	const unsigned int idy = blockIdx.y * blockDim.y + threadIdx.y;
+
+	const unsigned int offset = idy * width + idx;
+
+	if (idx < width && idy < height)
+	{
+		/****************************************************************************/
+
+		if (mask[offset] > threshold)
+		{
+			pointcloud[3 * offset + 0] = 0;
+			pointcloud[3 * offset + 1] = 0;
+			pointcloud[3 * offset + 2] = 0;
+			depth[offset] = 0;
+		}
+
+		/******************************************************************/
+	}
+}
+
 __global__ void kernel_reconstruct_pointcloud_base_table(int width,int height,float * const xL_rotate_x,float * const xL_rotate_y,float * const single_pattern_mapping,float * const R_1,float b,
 float * const confidence_map,float * const phase_x , float * const pointcloud,float * const depth)
 {
