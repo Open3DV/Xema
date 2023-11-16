@@ -120,6 +120,8 @@ public:
 
 	void updateRadiusFilter();
 
+	void updateReflectFilter();
+
 	void updateRectifyGray(int use, int r, float s);
 private:
 	bool showImage();
@@ -217,6 +219,8 @@ private slots:
 
 	void do_checkBox_toggled_radius_filter(bool state);
 
+	void do_checkBox_toggled_reflect_filter(bool state);
+
 	void do_checkBox_toggled_generate_brightness(bool state);
 
 	void do_checkBox_toggled_over_exposure(bool state);
@@ -270,8 +274,11 @@ private slots:
 
 	void do_double_spin_radius_filter_r_changed(double val);
 
-	void do_spin_radius_filter_num_changed(int val);
+	void do_spin_radius_filter_num_changed(int val); 
 
+	void do_double_spin_reflect_filter_b_changed(double val);
+
+	void do_spin_reflect_filter_threshold_changed(int val);
 	/******************************************************************************************/
 
 	void do_pushButton_save_as();

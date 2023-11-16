@@ -112,6 +112,9 @@ CameraCaptureGui::CameraCaptureGui(QWidget* parent)
 	ui.comboBox_ip->hide();
 	ui.pushButton_refresh->hide();
 
+	ui.label_reflect_filter_threshold->hide();
+	ui.spinBox_reflect_filter_threshold->hide();
+
 	m_pMaskLayer = new WaitingGui(this);
 	m_pMaskLayer->setFixedSize(this->size());//设置窗口大小
 	m_pMaskLayer->setVisible(false);//初始状态下隐藏，待需要显示时使用
@@ -320,6 +323,8 @@ bool CameraCaptureGui::initializeFunction()
 
 	connect(ui.groupBox_depth_filter, SIGNAL(toggled(bool)), this, SLOT(do_checkBox_toggled_depth_filter(bool)));
 	connect(ui.groupBox_radius_filter, SIGNAL(toggled(bool)), this, SLOT(do_checkBox_toggled_radius_filter(bool)));
+	connect(ui.groupBox_reflect_filter, SIGNAL(toggled(bool)), this, SLOT(do_checkBox_toggled_reflect_filter(bool)));
+
 	connect(ui.groupBox_rectify_phase_base_gray, SIGNAL(toggled(bool)), this, SLOT(do_checkBox_toggled_rectify_phase_base_gray(bool)));
 	connect(ui.groupBox_generate_brightness, SIGNAL(toggled(bool)), this, SLOT(do_checkBox_toggled_generate_brightness(bool)));
 
@@ -329,6 +334,9 @@ bool CameraCaptureGui::initializeFunction()
 
 	connect(ui.doubleSpinBox_radius_filter_r, SIGNAL(valueChanged(double)), this, SLOT(do_double_spin_radius_filter_r_changed(double)));
 	connect(ui.spinBox_radius_filter_num, SIGNAL(valueChanged(int)), this, SLOT(do_spin_radius_filter_num_changed(int)));
+
+	connect(ui.doubleSpinBox_reflect_filter_b, SIGNAL(valueChanged(double)), this, SLOT(do_double_spin_reflect_filter_b_changed(double)));
+	connect(ui.spinBox_reflect_filter_threshold, SIGNAL(valueChanged(int)), this, SLOT(do_spin_reflect_filter_threshold_changed(int)));
 
 	min_depth_value_ = 300;
 	max_depth_value_ = 3000;
@@ -929,7 +937,9 @@ void CameraCaptureGui::setUiData()
 		break;
 	}
 
-
+	ui.groupBox_reflect_filter->setChecked(firmware_config_param_.use_reflect_filter);
+	ui.doubleSpinBox_reflect_filter_b->setValue(firmware_config_param_.global_light_filter_b);
+	ui.spinBox_reflect_filter_threshold->setValue(firmware_config_param_.global_light_filter_threshold);
 
 }
 
@@ -1382,6 +1392,86 @@ void CameraCaptureGui::updateRectifyGray(int use, int r, float s)
 			else
 			{
 				addLogMessage(tr("出错！"));
+			}
+
+		}
+
+	}
+
+	camera_setting_flag_ = false;
+}
+
+
+void CameraCaptureGui::updateReflectFilter()
+{
+	if (camera_setting_flag_)
+	{
+		return;
+	}
+
+
+	//设置参数时加锁
+	camera_setting_flag_ = true;
+	if (connected_flag_)
+	{
+
+		int ret_code = -1;
+		//如果连续采集在用、先暂停
+		if (start_timer_flag_)
+		{
+
+			stopCapturingOneFrameBaseThread();
+
+			ret_code = DfSetParamReflectFilter(firmware_config_param_.use_global_light_filter, firmware_config_param_.global_light_filter_b,
+				firmware_config_param_.global_light_filter_threshold);
+			 
+			if (0 == ret_code)
+			{ 
+				if (1 == firmware_config_param_.use_global_light_filter)
+				{
+					addLogMessage(tr("打开反射滤波！"));
+					QString str = tr("系数: ") + QString::number(firmware_config_param_.global_light_filter_b) ;
+					addLogMessage(str);
+				}
+				else
+				{
+					addLogMessage(tr("关闭反射滤波！"));
+				}
+
+
+			}
+			else
+			{
+				addLogMessage(tr("设置反射滤波失败！"));
+			}
+
+
+			do_pushButton_capture_continuous();
+
+		}
+		else
+		{
+			ret_code = DfSetParamReflectFilter(firmware_config_param_.use_global_light_filter, firmware_config_param_.global_light_filter_b,
+				firmware_config_param_.global_light_filter_threshold);
+
+			if (0 == ret_code)
+			{
+				if (1 == firmware_config_param_.use_global_light_filter)
+				{
+					addLogMessage(tr("打开反射滤波！"));
+					QString str = tr("系数: ") + QString::number(firmware_config_param_.global_light_filter_b) ;
+					addLogMessage(str);
+				}
+				else
+				{
+					addLogMessage(tr("关闭反射滤波！"));
+				}
+
+
+			}
+			else
+			{
+				addLogMessage(tr("设置反射滤波失败！"));
 			}
 
 		}
@@ -3917,6 +4007,22 @@ void CameraCaptureGui::do_checkBox_toggled_generate_brightness(bool state)
 	}
 }
 
+
+void CameraCaptureGui::do_checkBox_toggled_reflect_filter(bool state)
+{
+	if (state)
+	{
+		firmware_config_param_.use_reflect_filter = 1;
+	}
+	else
+	{
+		firmware_config_param_.use_reflect_filter = 0;
+	}
+
+	updateReflectFilter();
+
+}
+
 void CameraCaptureGui::do_checkBox_toggled_radius_filter(bool state)
 {
 	if (state)
@@ -4168,6 +4274,19 @@ void CameraCaptureGui::do_spin_radius_filter_num_changed(int val)
 { 
 	firmware_config_param_.radius_filter_threshold_num = val;
 	updateRadiusFilter();
+}
+
+void CameraCaptureGui::do_double_spin_reflect_filter_b_changed(double val)
+{
+	firmware_config_param_.global_light_filter_b = val;
+	updateReflectFilter();
+}
+
+void CameraCaptureGui::do_spin_reflect_filter_threshold_changed(int val)
+{
+	firmware_config_param_.global_light_filter_threshold = val;
+	updateReflectFilter();
+
 }
 
 bool CameraCaptureGui::showImage()
