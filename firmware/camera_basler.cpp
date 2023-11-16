@@ -578,7 +578,16 @@ bool CameraBasler::openCamera()
         // CHECK( res );
         res = PylonDeviceSetFloatFeature(hDev_, "Gain", 0.0);
         // CHECK( res );
-         
+
+        res = PylonDeviceFeatureFromString( hDev_, "BslColorSpace", "Off" );
+
+        res = PylonDeviceFeatureFromString( hDev_, "BslLightSourcePreset", "Off" );
+        res = PylonDeviceFeatureFromString( hDev_, "BalanceRatioSelector", "Red" );
+        res = PylonDeviceSetFloatFeature(hDev_, "BalanceRatio", 1);
+        res = PylonDeviceFeatureFromString( hDev_, "BalanceRatioSelector", "Green" );
+        res = PylonDeviceSetFloatFeature(hDev_, "BalanceRatio", 0.5);
+        res = PylonDeviceFeatureFromString( hDev_, "BalanceRatioSelector", "Blue" );
+        res = PylonDeviceSetFloatFeature(hDev_, "BalanceRatio", 1);
     }
 
         res = PylonDeviceGetIntegerFeature( hDev_, "Width", &image_width_ );
