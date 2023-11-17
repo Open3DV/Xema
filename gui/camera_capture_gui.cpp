@@ -4012,11 +4012,11 @@ void CameraCaptureGui::do_checkBox_toggled_reflect_filter(bool state)
 {
 	if (state)
 	{
-		firmware_config_param_.use_reflect_filter = 1;
+		firmware_config_param_.use_global_light_filter = 1;
 	}
 	else
 	{
-		firmware_config_param_.use_reflect_filter = 0;
+		firmware_config_param_.use_global_light_filter = 0;
 	}
 
 	updateReflectFilter();
