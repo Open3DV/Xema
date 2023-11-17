@@ -941,11 +941,11 @@ bool cuda_generate_pointcloud_base_table()
 		kernel_remove_mask_result<<<blocksPerGrid, threadsPerBlock>>>(d_image_width_, d_image_height_, d_uncertain_map_,
 		cuda_system_config_settings_machine_.Instance().firwmare_param_.global_light_filter_threshold,d_depth_map_,d_point_cloud_map_);
 
-		cudaDeviceSynchronize();
+		// cudaDeviceSynchronize();
 
-		cv::Mat uncertain_map(d_image_height_, d_image_width_, CV_8U, cv::Scalar(0));
-		CHECK(cudaMemcpy(uncertain_map.data, d_uncertain_map_, 1 * d_image_height_ * d_image_width_ * sizeof(char), cudaMemcpyDeviceToHost));
-		cv::imwrite("uncertain_map.bmp", uncertain_map);
+		// cv::Mat uncertain_map(d_image_height_, d_image_width_, CV_8U, cv::Scalar(0));
+		// CHECK(cudaMemcpy(uncertain_map.data, d_uncertain_map_, 1 * d_image_height_ * d_image_width_ * sizeof(char), cudaMemcpyDeviceToHost));
+		// cv::imwrite("uncertain_map.bmp", uncertain_map);
 	}
 
 	// cv::Mat depth(d_image_height_,d_image_width_,CV_32FC1,cv::Scalar(0));
