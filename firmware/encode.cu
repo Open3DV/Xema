@@ -170,6 +170,137 @@ unsigned short* const d_in_4,unsigned short* const d_in_5, int repetition_count,
 	}
 }
 
+__global__ void kernel_computre_global_light_with_background(int width,int height,unsigned char * const d_in_0, unsigned char * const d_in_1, unsigned char * const d_in_2, unsigned char * const d_in_3,
+unsigned char* const d_in_4,unsigned char* const d_in_5,unsigned char* const d_in_white,unsigned char* const d_in_black, float b,unsigned char * const direct_out,unsigned char * const global_out,unsigned char * const uncertain_out)
+{
+	const unsigned int idx = blockIdx.x * blockDim.x + threadIdx.x;
+	const unsigned int idy = blockIdx.y * blockDim.y + threadIdx.y;
+	const unsigned int offset = idy * width + idx;
+
+	
+	if (idx < width && idy < height)
+	{
+ 
+		uchar max_val= 1;
+		uchar min_val = 255;
+
+		if(d_in_0[offset]> max_val)
+		{
+			max_val = d_in_0[offset]; 
+		}
+ 
+		if(d_in_1[offset]> max_val)
+		{
+			max_val = d_in_1[offset];
+		}
+		
+		if(d_in_2[offset]> max_val)
+		{
+			max_val = d_in_2[offset];
+		}
+
+		if(d_in_3[offset]> max_val)
+		{
+			max_val = d_in_3[offset];
+		}
+
+		if(d_in_4[offset]> max_val)
+		{
+			max_val = d_in_4[offset];
+		}
+
+		if(d_in_5[offset]> max_val)
+		{
+			max_val = d_in_5[offset];
+		}
+
+/*******************************************************************************************************************************************************/
+
+		if(d_in_0[offset]< min_val)
+		{
+			min_val = d_in_0[offset];
+		}
+		
+		if(d_in_1[offset]< min_val)
+		{
+			min_val = d_in_1[offset];
+		}
+		
+		if(d_in_2[offset]< min_val)
+		{
+			min_val = d_in_2[offset];
+		}
+		
+		if(d_in_3[offset]< min_val)
+		{
+			min_val = d_in_3[offset];
+		}
+		
+		if(d_in_4[offset]< min_val)
+		{
+			min_val = d_in_4[offset];
+		}
+		
+		if(d_in_5[offset]< min_val)
+		{
+			min_val = d_in_5[offset];
+		}
+
+
+		int m = min_val - d_in_black[offset];
+
+		if (m< 0)
+		{
+			m = 0;
+		}
+
+		min_val = m;
+
+/****************************************************************************************************************************************************/
+		float d = 0.5 + (max_val - min_val) / (1 - b);
+
+		if (d > 255)
+		{
+			direct_out[offset] = 255;
+		}
+		else if(d< 0)
+		{
+			direct_out[offset] = 0;
+		}
+		else
+		{
+			direct_out[offset] = d;
+		}
+
+		float g = 0.5 + 2 * (min_val - max_val * b) / (1 - b * b);
+
+
+		if (g < 0)
+		{
+			global_out[offset] = 0;
+		}
+		else if(g> 255)
+		{
+			global_out[offset] = 255;
+		}
+		else
+		{
+			global_out[offset] = g;
+		}
+ 
+		if(d< g)
+		{
+			uncertain_out[offset] = 32;
+		}
+
+		 
+/*****************************************************************************************************************************************************/
+
+	 
+	}
+}
+
+
 __global__ void kernel_computre_global_light(int width,int height,unsigned char * const d_in_0, unsigned char * const d_in_1, unsigned char * const d_in_2, unsigned char * const d_in_3,
 unsigned char* const d_in_4,unsigned char* const d_in_5, float b,unsigned char * const direct_out,unsigned char * const global_out,unsigned char * const uncertain_out)
 {

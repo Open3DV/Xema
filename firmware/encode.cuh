@@ -30,6 +30,9 @@ unsigned char* const d_in_4,unsigned char* const d_in_5, float * const d_out, fl
 __global__ void kernel_computre_global_light(int width,int height,unsigned char * const d_in_0, unsigned char * const d_in_1, unsigned char * const d_in_2, unsigned char * const d_in_3,
 unsigned char* const d_in_4,unsigned char* const d_in_5, float b,unsigned char * const direct_out,unsigned char * const global_out,unsigned char * const uncertain_out);
 
+__global__ void kernel_computre_global_light_with_background(int width,int height,unsigned char * const d_in_0, unsigned char * const d_in_1, unsigned char * const d_in_2, unsigned char * const d_in_3,
+unsigned char* const d_in_4,unsigned char* const d_in_5,unsigned char* const d_in_white,unsigned char* const d_in_black, float b,unsigned char * const direct_out,unsigned char * const global_out,unsigned char * const uncertain_out);
+
 __global__ void kernel_six_step_phase_shift_global(int width,int height,unsigned char * const d_in_0, unsigned char * const d_in_1, unsigned char * const d_in_2, unsigned char * const d_in_3,
 unsigned char* const d_in_4,unsigned char* const d_in_5, float * const d_out, float * const confidence,float b,unsigned char * const direct_out,unsigned char * const global_out);
  

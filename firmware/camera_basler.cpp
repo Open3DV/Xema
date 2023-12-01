@@ -585,25 +585,21 @@ bool CameraBasler::openCamera()
         res = PylonDeviceGetIntegerFeature( hDev_, "Height", &image_height_ );
         // CHECK( res );
 
-        LOG(INFO)<<"image_width_: "<<image_width_;
-        LOG(INFO)<<"image_height_: "<<image_height_;
-
-     
-
-    /* We will use the Continuous frame acquisition mode, i.e., the camera delivers
-    images continuously. */
-    res = PylonDeviceFeatureFromString( hDev_, "AcquisitionMode", "Continuous" );
-    // CHECK( res );
-
-
-
-    // min_camera_exposure_ = 6250*2;
-
-    camera_opened_state_ = true;
-    
-    trigger_on_flag_ = true;
+        LOG(INFO) << "image_width_: " << image_width_;
+        LOG(INFO) << "image_height_: " << image_height_;
  
-    return true;
+        /* We will use the Continuous frame acquisition mode, i.e., the camera delivers
+        images continuously. */
+        res = PylonDeviceFeatureFromString(hDev_, "AcquisitionMode", "Continuous");
+        // CHECK( res );
+
+        // min_camera_exposure_ = 6250*2;
+
+        camera_opened_state_ = true;
+
+        trigger_on_flag_ = true;
+
+        return true;
 }
 bool CameraBasler::closeCamera()
 {

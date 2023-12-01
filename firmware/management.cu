@@ -562,6 +562,9 @@ bool cuda_compute_phase_shift(int serial_flag)
 				kernel_computre_global_light<<<blocksPerGrid, threadsPerBlock>>>(d_image_width_, d_image_height_, d_patterns_list_[i + 0], d_patterns_list_[i + 1], d_patterns_list_[i + 2],
 																				 d_patterns_list_[i + 3], d_patterns_list_[i + 4], d_patterns_list_[i + 5],
 																				 cuda_system_config_settings_machine_.Instance().firwmare_param_.global_light_filter_b, d_direct_light_map_, d_global_light_map_, d_uncertain_map_);
+			
+			
+			
 			}
 
 				// cuda_six_step_phase_shift_texture<< <blocksPerGrid, threadsPerBlock >> > (d_wrap_map_list_[serial_flag], d_confidence_map_list_[serial_flag]);
@@ -1976,18 +1979,23 @@ int cuda_handle_minsw8_16(int flag)
 					// ,d_wrap_map_list_[3], d_confidence_map_list_[3],0.25,
 					// d_direct_light_map_,d_global_light_map_); //cuda_system_config_settings_machine_.Instance().firwmare_param_.global_light_filter_b
 
-					kernel_computre_global_light<<<blocksPerGrid, threadsPerBlock>>>(d_image_width_, d_image_height_, d_patterns_list_[i + 0],
+					kernel_computre_global_light_with_background<<<blocksPerGrid, threadsPerBlock>>>(d_image_width_, d_image_height_, d_patterns_list_[i + 0],
 																					 d_patterns_list_[i + 1], d_patterns_list_[i + 2], d_patterns_list_[i + 3], d_patterns_list_[i + 4], d_patterns_list_[i + 5],
-																					 cuda_system_config_settings_machine_.Instance().firwmare_param_.global_light_filter_b, d_direct_light_map_, d_global_light_map_,d_uncertain_map_);
+																					d_patterns_list_[0],d_patterns_list_[1] ,cuda_system_config_settings_machine_.Instance().firwmare_param_.global_light_filter_b,
+																					  d_direct_light_map_, d_global_light_map_,d_uncertain_map_);
 
-					// cudaDeviceSynchronize();
-					// cv::Mat direct_map(d_image_height_, d_image_width_, CV_8U, cv::Scalar(0));
-					// CHECK(cudaMemcpy(direct_map.data, d_direct_light_map_, 1 * d_image_height_ * d_image_width_ * sizeof(char), cudaMemcpyDeviceToHost));
-					// cv::imwrite("direct_map.bmp", direct_map);
+					cudaDeviceSynchronize();
+					cv::Mat black_map(d_image_height_, d_image_width_, CV_8U, cv::Scalar(0));
+					CHECK(cudaMemcpy(black_map.data, d_patterns_list_[1], 1 * d_image_height_ * d_image_width_ * sizeof(char), cudaMemcpyDeviceToHost));
+					cv::imwrite("black_map.bmp", black_map);
 
-					// cv::Mat global_map(d_image_height_, d_image_width_, CV_8U, cv::Scalar(0));
-					// CHECK(cudaMemcpy(global_map.data, d_global_light_map_, 1 * d_image_height_ * d_image_width_ * sizeof(char), cudaMemcpyDeviceToHost));
-					// cv::imwrite("global_map.bmp", global_map);
+					cv::Mat direct_map(d_image_height_, d_image_width_, CV_8U, cv::Scalar(0));
+					CHECK(cudaMemcpy(direct_map.data, d_direct_light_map_, 1 * d_image_height_ * d_image_width_ * sizeof(char), cudaMemcpyDeviceToHost));
+					cv::imwrite("direct_map.bmp", direct_map);
+
+					cv::Mat global_map(d_image_height_, d_image_width_, CV_8U, cv::Scalar(0));
+					CHECK(cudaMemcpy(global_map.data, d_global_light_map_, 1 * d_image_height_ * d_image_width_ * sizeof(char), cudaMemcpyDeviceToHost));
+					cv::imwrite("global_map.bmp", global_map);
 				}
 
 			//相位校正
