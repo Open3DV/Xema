@@ -925,14 +925,14 @@ bool cuda_generate_pointcloud_base_table()
 	// CHECK(cudaMemcpy(phase.data, d_unwrap_map_list_[0], 1 * d_image_height_ * d_image_width_ * sizeof(float), cudaMemcpyDeviceToHost));
 	// cv::imwrite("phase.tiff", phase);
 	
-	// if(1 == cuda_system_config_settings_machine_.Instance().firwmare_param_.use_reflect_filter)
-	// { 
-	// 	LOG(INFO)<<"filter_reflect_noise start:"; 
-	// 	cuda_filter_reflect_noise(d_unwrap_map_list_[0]); 
-	//
-	// 	cudaDeviceSynchronize();
-	// 	LOG(INFO)<<"filter_reflect_noise end";
-	// }
+	if(1 == cuda_system_config_settings_machine_.Instance().firwmare_param_.use_global_light_filter)
+	{ 
+		LOG(INFO)<<"filter_reflect_noise start:"; 
+		cuda_filter_reflect_noise(d_unwrap_map_list_[0]); 
+	
+		// cudaDeviceSynchronize();
+		LOG(INFO)<<"filter_reflect_noise end";
+	}
 
 
 
