@@ -5313,7 +5313,7 @@ DF_SDK_API int DfGetParamBilateralFilter(int& use, int& param_d)
 //输入参数：gain(亮度图增益)
 //输出参数： 无
 //返回值： 类型（int）:返回0表示设置参数成功;否则失败。
-DF_SDK_API int DfSetParamReflectFilter(int use, float param_b, int threshold)
+DF_SDK_API int DfSetParamReflectFilter(int use, float  param_b)
 {
 	std::unique_lock<std::timed_mutex> lck(command_mutex_, std::defer_lock);
 	while (!lck.try_lock_for(std::chrono::milliseconds(1)))
@@ -5362,12 +5362,7 @@ DF_SDK_API int DfSetParamReflectFilter(int use, float param_b, int threshold)
 			return DF_FAILED;
 		}
 
-		ret = send_buffer((char*)(&threshold), sizeof(int), g_sock);
-		if (ret == DF_FAILED)
-		{
-			close_socket(g_sock);
-			return DF_FAILED;
-		}
+
 	}
 	else if (command == DF_CMD_REJECT)
 	{
@@ -5389,7 +5384,7 @@ DF_SDK_API int DfSetParamReflectFilter(int use, float param_b, int threshold)
 //输入参数：无
 //输出参数：gain(亮度图增益)
 //返回值： 类型（int）:返回0表示设置参数成功;否则失败。
-DF_SDK_API int DfGetParamReflectFilter(int& use, float& param_b, int& threshold)
+DF_SDK_API int DfGetParamReflectFilter(int& use, float& param_b)
 {
 	std::unique_lock<std::timed_mutex> lck(command_mutex_, std::defer_lock);
 	while (!lck.try_lock_for(std::chrono::milliseconds(1)))
@@ -5423,16 +5418,9 @@ DF_SDK_API int DfGetParamReflectFilter(int& use, float& param_b, int& threshold)
 		{
 			close_socket(g_sock);
 			return DF_FAILED;
-		}
+		} 
 
 		ret = recv_buffer((char*)(&param_b), sizeof(float), g_sock);
-		if (ret == DF_FAILED)
-		{
-			close_socket(g_sock);
-			return DF_FAILED;
-		}
-
-		ret = recv_buffer((char*)(&threshold), sizeof(int), g_sock);
 		if (ret == DF_FAILED)
 		{
 			close_socket(g_sock);

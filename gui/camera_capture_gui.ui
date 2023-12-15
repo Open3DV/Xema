@@ -323,8 +323,8 @@
            <widget class="QWidget" name="scrollAreaWidgetContents">
             <property name="geometry">
              <rect>
-              <x>-95</x>
-              <y>-653</y>
+              <x>0</x>
+              <y>-852</y>
               <width>527</width>
               <height>1731</height>
              </rect>
@@ -921,6 +921,9 @@
                       <pointsize>16</pointsize>
                      </font>
                     </property>
+                    <property name="keyboardTracking">
+                     <bool>false</bool>
+                    </property>
                     <property name="value">
                      <double>2.500000000000000</double>
                     </property>
@@ -944,6 +947,9 @@
                      <font>
                       <pointsize>16</pointsize>
                      </font>
+                    </property>
+                    <property name="keyboardTracking">
+                     <bool>false</bool>
                     </property>
                     <property name="value">
                      <number>6</number>
@@ -1052,14 +1058,17 @@
                   </item>
                   <item>
                    <widget class="QDoubleSpinBox" name="doubleSpinBox_reflect_filter_b">
+                    <property name="keyboardTracking">
+                     <bool>false</bool>
+                    </property>
                     <property name="maximum">
-                     <double>1.000000000000000</double>
+                     <double>100.000000000000000</double>
                     </property>
                     <property name="singleStep">
-                     <double>0.010000000000000</double>
+                     <double>1.000000000000000</double>
                     </property>
                     <property name="value">
-                     <double>0.250000000000000</double>
+                     <double>75.000000000000000</double>
                     </property>
                    </widget>
                   </item>
@@ -1072,6 +1081,9 @@
                   </item>
                   <item>
                    <widget class="QSpinBox" name="spinBox_reflect_filter_threshold">
+                    <property name="keyboardTracking">
+                     <bool>false</bool>
+                    </property>
                     <property name="minimum">
                      <number>1</number>
                     </property>

@@ -1422,8 +1422,7 @@ void CameraCaptureGui::updateReflectFilter()
 
 			stopCapturingOneFrameBaseThread();
 
-			ret_code = DfSetParamReflectFilter(firmware_config_param_.use_global_light_filter, firmware_config_param_.global_light_filter_b,
-				firmware_config_param_.global_light_filter_threshold);
+			ret_code = DfSetParamReflectFilter(firmware_config_param_.use_global_light_filter, firmware_config_param_.global_light_filter_b);
 			 
 			if (0 == ret_code)
 			{ 
@@ -1451,8 +1450,7 @@ void CameraCaptureGui::updateReflectFilter()
 		}
 		else
 		{
-			ret_code = DfSetParamReflectFilter(firmware_config_param_.use_global_light_filter, firmware_config_param_.global_light_filter_b,
-				firmware_config_param_.global_light_filter_threshold);
+			ret_code = DfSetParamReflectFilter(firmware_config_param_.use_global_light_filter, firmware_config_param_.global_light_filter_b);
 
 			if (0 == ret_code)
 			{

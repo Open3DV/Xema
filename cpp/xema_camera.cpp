@@ -822,6 +822,133 @@ namespace XEMA {
 		return 0;
 	}
 
+
+	//函数名： setParamReflectFilter
+	//功能： 设置亮度图增益
+	//输入参数：use(开关：1开、0关)、param_b（过滤系数：范围0-100）
+	//输出参数： 无
+	//返回值： 类型（int）:返回0表示设置参数成功;否则失败。
+	int XemaCamera::setParamReflectFilter(int use, float param_b)
+	{
+		std::unique_lock<std::timed_mutex> lck(command_mutex_, std::defer_lock);
+		while (!lck.try_lock_for(std::chrono::milliseconds(1)))
+		{
+			LOG(INFO) << "--";
+		}
+
+		LOG(INFO) << "setParamReflectFilter:";
+		int ret = setup_socket(camera_ip_.c_str(), DF_PORT, g_sock);
+		if (ret == DF_FAILED)
+		{
+			close_socket(g_sock);
+			return DF_FAILED;
+		}
+		ret = send_command(DF_CMD_GET_PARAM_GLOBAL_LIGHT_FILTER, g_sock);
+		ret = send_buffer((char*)&token, sizeof(token), g_sock);
+		int command;
+		ret = recv_command(&command, g_sock);
+		if (ret == DF_FAILED)
+		{
+			LOG(ERROR) << "Failed to recv command";
+			close_socket(g_sock);
+			return DF_FAILED;
+		}
+
+		if (command == DF_CMD_OK)
+		{
+
+			ret = recv_buffer((char*)(&use), sizeof(int), g_sock);
+			if (ret == DF_FAILED)
+			{
+				close_socket(g_sock);
+				return DF_FAILED;
+			}
+
+			ret = recv_buffer((char*)(&param_b), sizeof(float), g_sock);
+			if (ret == DF_FAILED)
+			{
+				close_socket(g_sock);
+				return DF_FAILED;
+			}
+		}
+		else if (command == DF_CMD_REJECT)
+		{
+			close_socket(g_sock);
+			return DF_BUSY;
+		}
+		else if (command == DF_CMD_UNKNOWN)
+		{
+			close_socket(g_sock);
+			return DF_UNKNOWN;
+		}
+
+		close_socket(g_sock);
+		return DF_SUCCESS;
+	}
+
+	//函数名： getParamReflectFilter
+	//功能： 获取亮度图增益
+	//输入参数：无
+	//输出参数：use(开关：1开、0关)、param_b（过滤系数：范围0-100）
+	//返回值： 类型（int）:返回0表示设置参数成功;否则失败。
+	int XemaCamera::getParamReflectFilter(int& use, float& param_b)
+	{
+		std::unique_lock<std::timed_mutex> lck(command_mutex_, std::defer_lock);
+		while (!lck.try_lock_for(std::chrono::milliseconds(1)))
+		{
+			LOG(INFO) << "--";
+		}
+
+		LOG(INFO) << "getParamReflectFilter:";
+		int ret = setup_socket(camera_ip_.c_str(), DF_PORT, g_sock);
+		if (ret == DF_FAILED)
+		{
+			close_socket(g_sock);
+			return DF_FAILED;
+		}
+		ret = send_command(DF_CMD_GET_PARAM_GLOBAL_LIGHT_FILTER, g_sock);
+		ret = send_buffer((char*)&token, sizeof(token), g_sock);
+		int command;
+		ret = recv_command(&command, g_sock);
+		if (ret == DF_FAILED)
+		{
+			LOG(ERROR) << "Failed to recv command";
+			close_socket(g_sock);
+			return DF_FAILED;
+		}
+
+		if (command == DF_CMD_OK)
+		{
+
+			ret = recv_buffer((char*)(&use), sizeof(int), g_sock);
+			if (ret == DF_FAILED)
+			{
+				close_socket(g_sock);
+				return DF_FAILED;
+			}
+
+			ret = recv_buffer((char*)(&param_b), sizeof(float), g_sock);
+			if (ret == DF_FAILED)
+			{
+				close_socket(g_sock);
+				return DF_FAILED;
+			}
+		}
+		else if (command == DF_CMD_REJECT)
+		{
+			close_socket(g_sock);
+			return DF_BUSY;
+		}
+		else if (command == DF_CMD_UNKNOWN)
+		{
+			close_socket(g_sock);
+			return DF_UNKNOWN;
+		}
+
+		close_socket(g_sock);
+		return DF_SUCCESS;
+	}
+
 	//函数名： DfCaptureBrightnessData
 //功能： 获取亮度图
 //输入参数： color(图像颜色类型)
