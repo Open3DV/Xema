@@ -937,7 +937,7 @@ void CameraCaptureGui::setUiData()
 		break;
 	}
 
-	ui.groupBox_reflect_filter->setChecked(firmware_config_param_.use_reflect_filter);
+	ui.groupBox_reflect_filter->setChecked(firmware_config_param_.use_global_light_filter);
 	ui.doubleSpinBox_reflect_filter_b->setValue(firmware_config_param_.global_light_filter_b);
 	ui.spinBox_reflect_filter_threshold->setValue(firmware_config_param_.global_light_filter_threshold);
 
@@ -1920,6 +1920,9 @@ bool CameraCaptureGui::setCameraConfigParam()
 
 	ret_code = DfSetParamRadiusFilter(firmware_config_param_.use_radius_filter, firmware_config_param_.radius_filter_r,
 		firmware_config_param_.radius_filter_threshold_num);
+
+	ret_code = DfSetParamReflectFilter(firmware_config_param_.use_global_light_filter, firmware_config_param_.global_light_filter_b);
+
 	 
 
 	if (DF_UNKNOWN == ret_code)
