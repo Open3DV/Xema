@@ -4206,18 +4206,19 @@ int handle_cmd_set_param_global_light_filter(int client_sock)
     }
 
 
-    int threshold = 0;
-    ret = recv_buffer(client_sock, (char*)(&threshold), sizeof(int));
-    if(ret == DF_FAILED)
-    {
-        LOG(INFO)<<"send error, close this connection!\n";
-    	return DF_FAILED;
-    }
+    // int threshold = 0;
+    // ret = recv_buffer(client_sock, (char*)(&threshold), sizeof(int));
+    // if(ret == DF_FAILED)
+    // {
+    //     LOG(INFO)<<"send error, close this connection!\n";
+    // 	return DF_FAILED;
+    // }
  
+    b = (100. -b)/100.0;
 
     system_config_settings_machine_.Instance().firwmare_param_.use_global_light_filter = switch_val; 
     system_config_settings_machine_.Instance().firwmare_param_.global_light_filter_b = b; 
-    system_config_settings_machine_.Instance().firwmare_param_.global_light_filter_threshold = threshold; 
+    system_config_settings_machine_.Instance().firwmare_param_.global_light_filter_threshold = 0; 
 
  
     LOG(INFO)<<"use_global_light_filter: "<<system_config_settings_machine_.Instance().firwmare_param_.use_global_light_filter; 
@@ -4273,19 +4274,21 @@ int handle_cmd_get_param_global_light_filter(int client_sock)
 	    return DF_FAILED;
     }
 
-    ret = send_buffer(client_sock, (char*)(&system_config_settings_machine_.Instance().firwmare_param_.global_light_filter_b), sizeof(float) );
+    float b = 100 - 100* system_config_settings_machine_.Instance().firwmare_param_.global_light_filter_b;
+
+    ret = send_buffer(client_sock, (char*)(&b), sizeof(float) );
     if(ret == DF_FAILED)
     {
         LOG(INFO)<<"send error, close this connection!\n";
 	    return DF_FAILED;
     }
 
-    ret = send_buffer(client_sock, (char*)(&system_config_settings_machine_.Instance().firwmare_param_.global_light_filter_threshold), sizeof(int) );
-    if(ret == DF_FAILED)
-    {
-        LOG(INFO)<<"send error, close this connection!\n";
-	    return DF_FAILED;
-    }
+    // ret = send_buffer(client_sock, (char*)(&system_config_settings_machine_.Instance().firwmare_param_.global_light_filter_threshold), sizeof(int) );
+    // if(ret == DF_FAILED)
+    // {
+    //     LOG(INFO)<<"send error, close this connection!\n";
+	//     return DF_FAILED;
+    // }
  
   
     LOG(INFO)<<"use_global_light_filter: "<<system_config_settings_machine_.Instance().firwmare_param_.use_global_light_filter; 
