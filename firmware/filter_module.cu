@@ -257,6 +257,49 @@ __global__ void kernel_fisher_filter(uint32_t img_height, uint32_t img_width, fl
 	}
 }
 
+__global__ void kernel_monotonicity_filter(uint32_t img_height, uint32_t img_width, float monotonicity_threshold_val, float monotonicity_filter_val, unsigned char* mask_output, float * const unwrap_map)
+{
+	const unsigned int idx = blockIdx.x * blockDim.x + threadIdx.x;
+	const unsigned int idy = blockIdx.y * blockDim.y + threadIdx.y;
+	const unsigned int offset = idy * img_width + idx;
+
+	if (idx > 0 && idx < img_width - 1 && idy < img_height)
+	{
+		float before_phase = unwrap_map[offset - 1];
+		float this_phase = unwrap_map[offset];
+		float next_phase = unwrap_map[offset + 1];
+		float diff1 = this_phase - before_phase;
+		float diff2 = next_phase - this_phase;
+
+		if (this_phase < 0.1 || (before_phase < 0.1 && next_phase <0.1))
+		{
+			mask_output[offset] = 255;
+			return;
+		}
+
+		if (before_phase >= 0.1)
+		{
+			if (diff1 > monotonicity_threshold_val && diff1 < monotonicity_filter_val)
+			{
+				mask_output[offset] = 0;
+				return;
+			}
+		}
+
+		if (next_phase >= 0.1)
+		{
+			if (diff2 > monotonicity_threshold_val && diff2 < monotonicity_filter_val)
+			{
+				mask_output[offset] = 0;
+				return;
+			}
+		}
+
+		mask_output[offset] = 255;
+		return;
+	}
+}
+
 __global__ void kernel_depth_filter_step_1(uint32_t img_height, uint32_t img_width, float depth_threshold, float * const depth_map, float * const depth_map_temp, unsigned char* mask_temp)
 {
     const unsigned int idx = blockIdx.x * blockDim.x + threadIdx.x;
@@ -634,4 +677,19 @@ __global__ void kernel_removal_points_base_mask(uint32_t img_height, uint32_t im
 	}
 
 }
- 
+
+__global__ void kernel_removal_phase_base_mask(uint32_t img_height, uint32_t img_width, float* const unwrap_map, uchar* remove_mask)
+{
+	const unsigned int idx = blockIdx.x * blockDim.x + threadIdx.x;
+	const unsigned int idy = blockIdx.y * blockDim.y + threadIdx.y; 
+  
+	const unsigned int serial_id = idy * img_width + idx;
+
+	if (idx < img_width && idy < img_height)
+	{
+		if(0 == remove_mask[serial_id])
+		{
+			unwrap_map[serial_id] = 0;
+		}
+	}
+}
