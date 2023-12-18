@@ -578,6 +578,16 @@ bool CameraBasler::openCamera()
         // CHECK( res );
         res = PylonDeviceSetFloatFeature(hDev_, "Gain", 0.0);
         // CHECK( res );
+
+        res = PylonDeviceFeatureFromString( hDev_, "BslColorSpace", "Off" );
+
+        res = PylonDeviceFeatureFromString( hDev_, "BslLightSourcePreset", "Off" );
+        res = PylonDeviceFeatureFromString( hDev_, "BalanceRatioSelector", "Red" );
+        res = PylonDeviceSetFloatFeature(hDev_, "BalanceRatio", 1);
+        res = PylonDeviceFeatureFromString( hDev_, "BalanceRatioSelector", "Green" );
+        res = PylonDeviceSetFloatFeature(hDev_, "BalanceRatio", 0.5);
+        res = PylonDeviceFeatureFromString( hDev_, "BalanceRatioSelector", "Blue" );
+        res = PylonDeviceSetFloatFeature(hDev_, "BalanceRatio", 1);
     }
 
         res = PylonDeviceGetIntegerFeature( hDev_, "Width", &image_width_ );
@@ -585,25 +595,21 @@ bool CameraBasler::openCamera()
         res = PylonDeviceGetIntegerFeature( hDev_, "Height", &image_height_ );
         // CHECK( res );
 
-        LOG(INFO)<<"image_width_: "<<image_width_;
-        LOG(INFO)<<"image_height_: "<<image_height_;
-
-     
-
-    /* We will use the Continuous frame acquisition mode, i.e., the camera delivers
-    images continuously. */
-    res = PylonDeviceFeatureFromString( hDev_, "AcquisitionMode", "Continuous" );
-    // CHECK( res );
-
-
-
-    // min_camera_exposure_ = 6250*2;
-
-    camera_opened_state_ = true;
-    
-    trigger_on_flag_ = true;
+        LOG(INFO) << "image_width_: " << image_width_;
+        LOG(INFO) << "image_height_: " << image_height_;
  
-    return true;
+        /* We will use the Continuous frame acquisition mode, i.e., the camera delivers
+        images continuously. */
+        res = PylonDeviceFeatureFromString(hDev_, "AcquisitionMode", "Continuous");
+        // CHECK( res );
+
+        // min_camera_exposure_ = 6250*2;
+
+        camera_opened_state_ = true;
+
+        trigger_on_flag_ = true;
+
+        return true;
 }
 bool CameraBasler::closeCamera()
 {
@@ -721,7 +727,8 @@ bool CameraBasler::setExposure(double val)
     {
         if (val < min_camera_exposure_)
         {
-            val = min_camera_exposure_;
+            // val = min_camera_exposure_;
+            val+= 1000;
         }
     }
 

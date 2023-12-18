@@ -16,6 +16,8 @@ bool cuda_set_param_z_range(float min,float max);
 
 __global__ void kernel_reconstruct_pointcloud_base_table(int width,int height,float * const xL_rotate_x,float * const xL_rotate_y,float * const single_pattern_mapping,float * const R_1,float b,
 float * const confidence_map,float * const phase_x , float * const pointcloud,float * const depth);
+ 
+__global__ void kernel_remove_mask_result(int width,int height, unsigned char * const mask,uchar threshold,float* const depth,float * const pointcloud);
 
 __device__ float bilinear_interpolation(float x, float y, int map_width, float *mapping);
 

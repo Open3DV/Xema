@@ -81,7 +81,7 @@ SettingsFileFunction::~SettingsFileFunction()
 bool SettingsFileFunction::loadProcessingSettingsFile(QString path)
 {
 	//打开文件
-	QFile file(path);
+	QFile file(path.toLocal8Bit());
 	file.open(QIODevice::ReadOnly);
 	QByteArray data = file.readAll();
 	file.close();
@@ -306,6 +306,19 @@ bool SettingsFileFunction::loadProcessingSettingsFile(QString path)
 			qDebug() << "fisher_confidence is:" << firmware_Obj.value("fisher_confidence").toInt();
 			camera_config_.Instance().firwmare_param_.fisher_confidence = firmware_Obj.value("fisher_confidence").toInt();
 		}
+
+
+		if (firmware_Obj.contains("use_reflect_filter") && firmware_Obj["use_reflect_filter"].isDouble())
+		{
+			qDebug() << "use_reflect_filter is:" << firmware_Obj.value("use_reflect_filter").toInt();
+			camera_config_.Instance().firwmare_param_.use_global_light_filter = firmware_Obj.value("use_reflect_filter").toInt();
+		}
+
+		if (firmware_Obj.contains("reflect_filter_b") && firmware_Obj["reflect_filter_b"].isDouble())
+		{
+			qDebug() << "reflect_filter_b is:" << firmware_Obj.value("reflect_filter_b").toDouble();
+			camera_config_.Instance().firwmare_param_.global_light_filter_b = firmware_Obj.value("reflect_filter_b").toDouble();
+		}
 	}
 
 	/******************************************************************************************************************************/
@@ -432,7 +445,7 @@ bool SettingsFileFunction::loadProcessingSettingsFile(QString path)
 bool SettingsFileFunction::saveProcessingSettingsFile(QString path)
 {
 
-	QFile file(path);
+	QFile file(path.toLocal8Bit());
 	if (!file.open(QIODevice::WriteOnly)) {
 		qDebug() << "File open error";
 	}
@@ -507,6 +520,11 @@ bool SettingsFileFunction::saveProcessingSettingsFile(QString path)
 
 	jsonObject_firmware.insert("confidence", camera_config_.Instance().firwmare_param_.confidence);
 	jsonObject_firmware.insert("fisher_confidence", camera_config_.Instance().firwmare_param_.fisher_confidence);
+
+	jsonObject_firmware.insert("use_reflect_filter", camera_config_.Instance().firwmare_param_.use_global_light_filter);
+	jsonObject_firmware.insert("reflect_filter_b", camera_config_.Instance().firwmare_param_.global_light_filter_b);
+
+ 
 
 	// 使用QJsonDocument设置该json对象
 	QJsonDocument jsonDoc;

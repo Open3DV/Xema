@@ -3,7 +3,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LocalDebuggerWorkingDirectory>..\x64\Release</LocalDebuggerWorkingDirectory>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
-    <LocalDebuggerCommandArguments>--read --ip 192.168.0.152 --model patterns-04-c  --patterns .\color\04 --calib .\capture\param.txt --version 3010 --pointcloud .\color</LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>--read --ip 192.168.0.152 --model patterns-test  --patterns D:\Data\capture_1009\capture_1009\08 --calib D:\Data\capture_1009\capture_1009\param.txt --version 3010 --pointcloud D:\Data\capture_1009</LocalDebuggerCommandArguments>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LocalDebuggerCommandArguments>--capture --ip 192.168.0.123 --patterns .\capture\test --calib .\capture\param.txt --pointcloud .\capture</LocalDebuggerCommandArguments>

@@ -632,7 +632,10 @@ bool calibrate_stereo_color(std::string patterns_path, std::string calib_path)
 		cv::Mat bayer = board_images_list[g_i];
 
 		cv::Mat img;
-		convertBayer2Gray(bayer, img);
+		cv::cvtColor(bayer, img, cv::COLOR_BayerBG2BGR);
+		std::vector<cv::Mat> bgr_chanels;
+		cv::split(img, bgr_chanels);
+		img = bgr_chanels[0];
 
 		std::vector<cv::Point2f> circle_points;
 		bool found = calib_function.findCircleBoardFeature(img, circle_points);

@@ -438,6 +438,20 @@ extern "C"
 	//输出参数： brightness(亮度图)
 	//返回值： 类型（int）:返回0表示获取数据成功;返回-1表示采集数据失败.
 	DF_SDK_API int DfCaptureBrightnessData(unsigned char* brightness, XemaColor color);
+
+	//函数名： DfSetParamReflectFilter
+	//功能： 设置亮度图增益
+	//输入参数：use(开关：1开、0关)、param_b（过滤系数：范围0-100）
+	//输出参数： 无
+	//返回值： 类型（int）:返回0表示设置参数成功;否则失败。
+	DF_SDK_API int DfSetParamReflectFilter(int use,float param_b);
+
+	//函数名： DfGetParamReflectFilter
+	//功能： 获取亮度图增益
+	//输入参数：无
+	//输出参数：use(开关：1开、0关)、param_b（过滤系数：范围0-100）
+	//返回值： 类型（int）:返回0表示设置参数成功;否则失败。
+	DF_SDK_API int DfGetParamReflectFilter(int &use, float& param_b);
 }
 
 

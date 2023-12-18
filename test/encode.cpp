@@ -62,7 +62,8 @@ bool DF_Encode::unwrapBase2Kmap(cv::Mat wrap_map, cv::Mat k1_map, cv::Mat k2_map
 	return false;
 }
 
-bool DF_Encode::computePhaseShift(std::vector<cv::Mat> patterns, cv::Mat& wrap_map, cv::Mat& confidence_map, cv::Mat& average_map, cv::Mat& brightness_map, cv::Mat& mask_map)
+bool DF_Encode::computePhaseShift(std::vector<cv::Mat> patterns, cv::Mat& wrap_map, cv::Mat& confidence_map, cv::Mat& global_map,
+	cv::Mat& average_map, cv::Mat& brightness_map, cv::Mat& mask_map)
 {
 	if (patterns.empty())
 	{
@@ -76,6 +77,7 @@ bool DF_Encode::computePhaseShift(std::vector<cv::Mat> patterns, cv::Mat& wrap_m
 	cv::Mat confidence(nr, nc, CV_32F, cv::Scalar(0));
 	cv::Mat average(nr, nc, CV_8U, cv::Scalar(0));
 	cv::Mat brightness(nr, nc, CV_8U, cv::Scalar(0));
+	cv::Mat global(nr, nc, CV_8U, cv::Scalar(0));
 	cv::Mat mask(nr, nc, CV_8U, cv::Scalar(0));
 
 	switch (patterns.size())
@@ -95,6 +97,7 @@ bool DF_Encode::computePhaseShift(std::vector<cv::Mat> patterns, cv::Mat& wrap_m
 			uchar* ptr_m = mask.ptr<uchar>(r);
 			uchar* ptr_avg = average.ptr<uchar>(r);
 			uchar* ptr_b = brightness.ptr<uchar>(r);
+			uchar* ptr_g = global.ptr<uchar>(r);
 			float* ptr_con = confidence.ptr<float>(r);
 			float* ptr_wrap = wrap.ptr<float>(r);
 
@@ -141,7 +144,125 @@ bool DF_Encode::computePhaseShift(std::vector<cv::Mat> patterns, cv::Mat& wrap_m
 				ptr_avg[c] = ave + 0.5;
 				ptr_con[c] = r / 3.0;
 				ptr_b[c] = ave + 0.5 + r / 3.0;
+				ptr_g[c] = ave + 0.5 - r / 3.0;
+				/***********************************************************************/
 
+				if (exposure_num > 3)
+				{
+					ptr_m[c] = 0;
+					ptr_wrap[c] = -1;
+				}
+				else
+				{
+					ptr_wrap[c] = CV_PI + std::atan2(a, b);
+				}
+
+
+			}
+		}
+	}
+	break;
+	default:
+		break;
+	}
+
+
+
+
+	/*****************************************************************************************************************************/
+
+	confidence_map = confidence.clone();
+	wrap_map = wrap.clone();
+	brightness_map = brightness.clone();
+	average_map = average.clone();
+	mask_map = mask.clone();
+	global_map = global.clone();
+
+	return true;
+}
+
+bool DF_Encode::computePhaseShift(std::vector<cv::Mat> patterns, cv::Mat& wrap_map, cv::Mat& confidence_map, cv::Mat& average_map, cv::Mat& brightness_map, cv::Mat& mask_map)
+{
+	if (patterns.empty())
+	{
+		return false;
+	}
+
+	int nr = patterns[0].rows;
+	int nc = patterns[0].cols;
+
+	cv::Mat wrap(nr, nc, CV_32F, cv::Scalar(0));
+	cv::Mat confidence(nr, nc, CV_32F, cv::Scalar(0));
+	cv::Mat average(nr, nc, CV_8U, cv::Scalar(0));
+	cv::Mat brightness(nr, nc, CV_8U, cv::Scalar(0));
+	cv::Mat global(nr, nc, CV_8U, cv::Scalar(0));
+	cv::Mat mask(nr, nc, CV_8U, cv::Scalar(0));
+
+	switch (patterns.size())
+	{
+	case 6:
+	{
+#pragma omp parallel for
+		for (int r = 0; r < nr; r++)
+		{
+			uchar* ptr0 = patterns[0 + 3].ptr<uchar>(r);
+			uchar* ptr1 = patterns[1 + 3].ptr<uchar>(r);
+			uchar* ptr2 = patterns[2 + 3].ptr<uchar>(r);
+			uchar* ptr3 = patterns[3 - 3].ptr<uchar>(r);
+			uchar* ptr4 = patterns[4 - 3].ptr<uchar>(r);
+			uchar* ptr5 = patterns[5 - 3].ptr<uchar>(r);
+
+			uchar* ptr_m = mask.ptr<uchar>(r);
+			uchar* ptr_avg = average.ptr<uchar>(r);
+			uchar* ptr_b = brightness.ptr<uchar>(r);
+			uchar* ptr_g = global.ptr<uchar>(r);
+			float* ptr_con = confidence.ptr<float>(r);
+			float* ptr_wrap = wrap.ptr<float>(r);
+
+			for (int c = 0; c < nc; c++)
+			{
+				int exposure_num = 0;
+
+				if (255 == ptr0[c])
+				{
+					exposure_num++;
+				}
+				if (255 == ptr1[c])
+				{
+					exposure_num++;
+				}
+				if (255 == ptr2[c])
+				{
+					exposure_num++;
+				}
+				if (255 == ptr3[c])
+				{
+					exposure_num++;
+				}
+				if (255 == ptr4[c])
+				{
+					exposure_num++;
+				}
+				if (255 == ptr5[c])
+				{
+					exposure_num++;
+				}
+
+
+				float b = ptr0[c] * std::sin(0 * CV_2PI / 6.0) + ptr1[c] * std::sin(1 * CV_2PI / 6.0) + ptr2[c] * std::sin(2 * CV_2PI / 6.0)
+					+ ptr3[c] * std::sin(3 * CV_2PI / 6.0) + ptr4[c] * std::sin(4 * CV_2PI / 6.0) + ptr5[c] * std::sin(5 * CV_2PI / 6.0);
+
+				float a = ptr0[c] * std::cos(0 * CV_2PI / 6.0) + ptr1[c] * std::cos(1 * CV_2PI / 6.0) + ptr2[c] * std::cos(2 * CV_2PI / 6.0)
+					+ ptr3[c] * std::cos(3 * CV_2PI / 6.0) + ptr4[c] * std::cos(4 * CV_2PI / 6.0) + ptr5[c] * std::cos(5 * CV_2PI / 6.0);
+
+				float ave = (ptr0[c] + ptr1[c] + ptr2[c] + ptr3[c] + ptr4[c] + ptr5[c]) / 6.0;
+
+				float r = std::sqrt(a * a + b * b);
+
+				ptr_avg[c] = ave + 0.5;
+				ptr_con[c] = r / 3.0;
+				ptr_b[c] = ave + 0.5 + r / 3.0;
+				ptr_g[c] = ave + 0.5 - r / 3.0;
 				/***********************************************************************/
 
 				if (exposure_num > 3)
@@ -1451,6 +1572,318 @@ bool DF_Encode::grayCodeToBinCode(std::vector<bool> gray_code, std::vector<bool>
 	return true;
 }
 
+
+bool DF_Encode::decodeMinswGrayCode(std::vector<cv::Mat> patterns, cv::Mat threshold, cv::Mat direct, cv::Mat global, cv::Mat& uncertain, cv::Mat& k_map)
+{
+	if (patterns.empty())
+	{
+		return false;
+	}
+
+	int nr = patterns[0].rows;
+	int nc = patterns[0].cols;
+
+	cv::Mat bit_value_map(nr, nc, CV_8U, cv::Scalar(0));
+	cv::Mat uncertain_map(nr, nc, CV_8U, cv::Scalar(0));
+
+	//std::vector<std::vector<bool>> gray_code_list;
+	//threshold bin
+	std::vector<cv::Mat> bin_patterns;
+	for (int i = 0; i < patterns.size(); i++)
+	{
+		cv::Mat bin_mat(nr, nc, CV_8U, cv::Scalar(0));
+		int mv_i = (patterns.size() - i - 1);
+
+		cv::Mat pattern = patterns[i].clone();
+		cv::blur(pattern, pattern, cv::Size(5, 5));
+
+		for (int r = 0; r < nr; r++)
+		{
+			uchar* ptr_bin = bin_mat.ptr<uchar>(r); 
+			uchar* ptr_p = pattern.ptr<uchar>(r);
+			uchar* ptr_val = bit_value_map.ptr<uchar>(r);
+			uchar* ptr_direct = direct.ptr<uchar>(r);
+			uchar* ptr_global = global.ptr<uchar>(r);
+			uchar* ptr_threshold = threshold.ptr<uchar>(r);
+			uchar* ptr_uncertain = uncertain_map.ptr<uchar>(r);
+
+
+			for (int c = 0; c < nc; c++)
+			{
+				uchar val = ptr_val[c];
+
+				uchar mask = 1 << mv_i;
+				val = val & (~mask);
+				uchar set_bit = 0;
+
+				if (ptr_direct[c] < 2)
+				{
+					ptr_uncertain[c] = 20;
+				}
+				  
+				if (ptr_direct[c] > ptr_global[c])
+				{
+					if (ptr_p[c] > ptr_direct[c])
+					{
+						ptr_bin[c] = 255;
+						set_bit = 1 << mv_i;
+					}
+					else if (ptr_p[c] < ptr_global[c])
+					{
+						ptr_bin[c] = 0;
+					}
+					else
+					{
+						if (ptr_p[c] > ptr_threshold[c])
+						{
+							ptr_bin[c] = 255;
+							set_bit = 1 << mv_i;
+						}
+						else
+						{
+							ptr_bin[c] = 0;
+						}
+						 
+
+						ptr_uncertain[c] = 10;
+					}
+				}
+				else
+				{
+					if (ptr_p[c] < ptr_direct[c])
+					{
+						ptr_bin[c] = 0;
+					}
+					else if (ptr_p[c] > ptr_global[c])
+					{
+						ptr_bin[c] = 255;
+						set_bit = 1 << mv_i;
+					}
+					else
+					{
+						ptr_uncertain[c] = 255;
+					}
+
+				}
+
+
+
+
+
+				//if (ptr_gray[c] < ptr_avg[c])
+				//{
+				//	ptr_bin[c] = 0;
+				//}
+				//else
+				//{
+				//	ptr_bin[c] = 255;
+				//	set_bit = 1 << mv_i;
+				//}
+
+
+				val = val | set_bit;
+				ptr_val[c] = val;
+
+			}
+		}
+		bin_patterns.push_back(bin_mat.clone());
+	}
+
+	cv::Mat k1(nr, nc, CV_16U, cv::Scalar(0));
+
+
+	for (int r = 0; r < nr; r++)
+	{
+		ushort* ptr_k1 = k1.ptr<ushort>(r);
+
+		for (int c = 0; c < nc; c++)
+		{
+			std::vector<bool> gray_code_list;
+
+			for (int i = 0; i < bin_patterns.size(); i++)
+			{
+				uchar val = bin_patterns[i].at<uchar>(r, c);
+
+				if (255 == val)
+				{
+					gray_code_list.push_back(true);
+				}
+				else
+				{
+					gray_code_list.push_back(false);
+				}
+			}
+
+			ushort k_1 = 0;
+			for (int i = 0; i < gray_code_list.size(); i++)
+			{
+				k_1 += gray_code_list[i] * std::pow(2, gray_code_list.size() - i - 1);
+
+			}
+			ptr_k1[c] = k_1;
+		}
+
+	}
+
+	k_map = k1.clone();
+
+	uncertain = uncertain_map.clone();
+
+	return true;
+
+}
+
+bool DF_Encode::decodeMinswGrayCode(std::vector<cv::Mat> patterns, std::vector<cv::Mat> patterns_inv,
+	cv::Mat direct, cv::Mat global, cv::Mat& uncertain, cv::Mat& k_map)
+{
+	if (patterns.size() != patterns_inv.size() || patterns.empty())
+	{
+		return false;
+	}
+
+	int nr = patterns[0].rows;
+	int nc = patterns[0].cols;
+
+	cv::Mat bit_value_map(nr, nc, CV_8U, cv::Scalar(0));
+	cv::Mat uncertain_map(nr, nc, CV_8U, cv::Scalar(0));
+
+	//std::vector<std::vector<bool>> gray_code_list;
+	//threshold bin
+	std::vector<cv::Mat> bin_patterns;
+	for (int i = 0; i < patterns.size(); i++)
+	{
+		cv::Mat bin_mat(nr, nc, CV_8U, cv::Scalar(0));
+		int mv_i = (patterns.size() - i - 1);
+
+		for (int r = 0; r < nr; r++)
+		{
+			uchar* ptr_bin = bin_mat.ptr<uchar>(r);
+			uchar* ptr_p_inv = patterns_inv[i].ptr<uchar>(r);
+			uchar* ptr_p = patterns[i].ptr<uchar>(r);
+			uchar* ptr_val = bit_value_map.ptr<uchar>(r);
+			uchar* ptr_direct = direct.ptr<uchar>(r);
+			uchar* ptr_global = global.ptr<uchar>(r);
+			uchar* ptr_uncertain = uncertain_map.ptr<uchar>(r);
+
+
+			for (int c = 0; c < nc; c++)
+			{
+				uchar val = ptr_val[c];
+
+				uchar mask = 1 << mv_i;
+				val = val & (~mask);
+				uchar set_bit = 0;
+
+				if (ptr_direct[c] < 2)
+				{
+					ptr_uncertain[c] = 255;
+				}
+
+				if (ptr_direct[c] > ptr_global[c])
+				{
+					if (ptr_p[c] > ptr_p_inv[c])
+					{
+						ptr_bin[c] = 255;
+						set_bit = 1 << mv_i;
+					}
+					else if (ptr_p[c] < ptr_p_inv[c])
+					{
+						ptr_bin[c] = 0;
+					}
+					else
+					{
+						ptr_uncertain[c] = 255;
+					}
+				}
+				else
+				{
+					if (ptr_p[c] < ptr_direct[c] && ptr_p_inv[c] > ptr_global[c])
+					{
+						ptr_bin[c] = 0;
+					}
+					else
+					{
+						ptr_uncertain[c] = 255;
+					}
+
+					if (ptr_p[c] > ptr_global[c] && ptr_p_inv[c] < ptr_direct[c])
+					{
+						ptr_bin[c] = 255;
+						set_bit = 1 << mv_i;
+					}
+					else
+					{
+						ptr_uncertain[c] = 255;
+					}
+
+				}
+
+
+				 
+
+
+				//if (ptr_gray[c] < ptr_avg[c])
+				//{
+				//	ptr_bin[c] = 0;
+				//}
+				//else
+				//{
+				//	ptr_bin[c] = 255;
+				//	set_bit = 1 << mv_i;
+				//}
+
+
+				val = val | set_bit;
+				ptr_val[c] = val;
+
+			}
+		}
+		bin_patterns.push_back(bin_mat.clone());
+	}
+
+	cv::Mat k1(nr, nc, CV_16U, cv::Scalar(0));
+
+
+	for (int r = 0; r < nr; r++)
+	{
+		ushort* ptr_k1 = k1.ptr<ushort>(r);
+
+		for (int c = 0; c < nc; c++)
+		{
+			std::vector<bool> gray_code_list;
+
+			for (int i = 0; i < bin_patterns.size(); i++)
+			{
+				uchar val = bin_patterns[i].at<uchar>(r, c);
+
+				if (255 == val)
+				{
+					gray_code_list.push_back(true);
+				}
+				else
+				{
+					gray_code_list.push_back(false);
+				}
+			}
+
+			ushort k_1 = 0;
+			for (int i = 0; i < gray_code_list.size(); i++)
+			{
+				k_1 += gray_code_list[i] * std::pow(2, gray_code_list.size() - i - 1);
+
+			}
+			ptr_k1[c] = k_1;
+		}
+
+	}
+
+	k_map = k1.clone();
+
+	uncertain = uncertain_map.clone();
+
+	return true;
+	 
+}
 
 bool DF_Encode::decodeMinswGrayCode(std::vector<cv::Mat> patterns, std::vector<cv::Mat> threshold_list, cv::Mat& k_map)
 {

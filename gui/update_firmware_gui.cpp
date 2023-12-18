@@ -57,6 +57,22 @@ void UpdateFirmwareGui::do_pushButton_select()
 
 void UpdateFirmwareGui::do_pushButton_update()
 {
+	QFileInfo fileInfo(fileName);
+	if (!fileInfo.isFile())
+	{
+		QMessageBox::critical(this, tr("注意"), tr("升级失败,请选择正确的固件！"));
+		return;
+	}
+	else
+	{
+		if (fileInfo.fileName() != "camera_server")
+		{
+			QMessageBox::critical(this, tr("注意"), tr("升级失败,请选择正确的固件！"));
+			return;
+		}
+	}
+	
+
 	ui.pushButton_update->setDisabled(true);
 	ui.pushButton_select->setDisabled(true);
 	ui.pushButton_close->setDisabled(true);

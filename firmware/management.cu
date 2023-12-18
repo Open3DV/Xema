@@ -199,6 +199,11 @@ bool cuda_malloc_basic_memory()
 	cudaMalloc((void**)&d_depth_map_, d_image_height_*d_image_width_ * sizeof(float));
 	cudaMalloc((void**)&d_depth_map_temp_, d_image_height_*d_image_width_ * sizeof(float));
 	cudaMalloc((void**)&d_triangulation_error_map_, d_image_height_*d_image_width_ * sizeof(float));
+
+	
+	cudaMalloc((void**)&d_global_light_map_, d_image_height_*d_image_width_ * sizeof(char));
+	cudaMalloc((void**)&d_direct_light_map_, d_image_height_*d_image_width_ * sizeof(char));
+	cudaMalloc((void**)&d_uncertain_map_, d_image_height_*d_image_width_ * sizeof(char));
  
  	cudaMalloc((void**)&d_single_pattern_mapping_, 4000*2000 * sizeof(float)); 
 	cudaMalloc((void**)&d_single_pattern_minimapping_, 128*128 * sizeof(float)); 
@@ -281,6 +286,12 @@ bool cuda_free_basic_memory()
     cudaFree(d_depth_map_);
 	cudaFree(d_depth_map_temp_);
     cudaFree(d_triangulation_error_map_);
+
+    cudaFree(d_global_light_map_);
+    cudaFree(d_direct_light_map_);
+    cudaFree(d_uncertain_map_);
+	
+
 
     cudaFree(d_camera_intrinsic_);
 	cudaFree(d_project_intrinsic_); 
@@ -490,8 +501,14 @@ void cuda_clear_reconstruct_cache()
 	CHECK(cudaMemset(d_hdr_brightness_list_[2],0, d_image_height_*d_image_width_ * sizeof(char))); 
 	CHECK(cudaMemset(d_hdr_brightness_list_[3],0, d_image_height_*d_image_width_ * sizeof(char))); 
 	CHECK(cudaMemset(d_hdr_brightness_list_[4],0, d_image_height_*d_image_width_ * sizeof(char))); 
-	CHECK(cudaMemset(d_hdr_brightness_list_[5],0, d_image_height_*d_image_width_ * sizeof(char))); 
-	
+	CHECK(cudaMemset(d_hdr_brightness_list_[5],0, d_image_height_*d_image_width_ * sizeof(char)));
+
+	if (1 == cuda_system_config_settings_machine_.Instance().firwmare_param_.use_global_light_filter)
+	{
+		CHECK(cudaMemset(d_direct_light_map_, 0, d_image_height_ * d_image_width_ * sizeof(char)));
+		CHECK(cudaMemset(d_global_light_map_, 0, d_image_height_ * d_image_width_ * sizeof(char)));
+		CHECK(cudaMemset(d_uncertain_map_, 0, d_image_height_ * d_image_width_ * sizeof(char)));
+	}
 }
 
 
@@ -538,8 +555,18 @@ bool cuda_compute_phase_shift(int serial_flag)
 			int i= 12; 
 			kernel_six_step_phase_shift << <blocksPerGrid, threadsPerBlock >> > (d_image_width_,d_image_height_,d_patterns_list_[i+0], d_patterns_list_[i + 1], d_patterns_list_[i + 2],
 				d_patterns_list_[i + 3],d_patterns_list_[i + 4],d_patterns_list_[i + 5] ,d_wrap_map_list_[serial_flag], d_confidence_map_list_[serial_flag]);
- 
-            
+
+			if (1 == cuda_system_config_settings_machine_.Instance().firwmare_param_.use_global_light_filter)
+			{
+
+				kernel_computre_global_light<<<blocksPerGrid, threadsPerBlock>>>(d_image_width_, d_image_height_, d_patterns_list_[i + 0], d_patterns_list_[i + 1], d_patterns_list_[i + 2],
+																				 d_patterns_list_[i + 3], d_patterns_list_[i + 4], d_patterns_list_[i + 5],
+																				 cuda_system_config_settings_machine_.Instance().firwmare_param_.global_light_filter_b, d_direct_light_map_, d_global_light_map_, d_uncertain_map_);
+			
+			
+			
+			}
+
 				// cuda_six_step_phase_shift_texture<< <blocksPerGrid, threadsPerBlock >> > (d_wrap_map_list_[serial_flag], d_confidence_map_list_[serial_flag]);
 				// cudaDeviceSynchronize();
 
@@ -898,17 +925,31 @@ bool cuda_generate_pointcloud_base_table()
 	// CHECK(cudaMemcpy(phase.data, d_unwrap_map_list_[0], 1 * d_image_height_ * d_image_width_ * sizeof(float), cudaMemcpyDeviceToHost));
 	// cv::imwrite("phase.tiff", phase);
 	
-	// if(1 == cuda_system_config_settings_machine_.Instance().firwmare_param_.use_reflect_filter)
+	// if(1 == cuda_system_config_settings_machine_.Instance().firwmare_param_.use_global_light_filter)
 	// { 
 	// 	LOG(INFO)<<"filter_reflect_noise start:"; 
 	// 	cuda_filter_reflect_noise(d_unwrap_map_list_[0]); 
-	//
-	// 	cudaDeviceSynchronize();
+	
+	// 	// cudaDeviceSynchronize();
 	// 	LOG(INFO)<<"filter_reflect_noise end";
 	// }
 
-	kernel_reconstruct_pointcloud_base_table << <blocksPerGrid, threadsPerBlock>> > (d_image_width_,d_image_height_,d_xL_rotate_x_,d_xL_rotate_y_,d_single_pattern_mapping_,d_R_1_,d_baseline_,
-	d_confidence_map_list_[3],d_unwrap_map_list_[0],d_point_cloud_map_,d_depth_map_);
+
+
+	kernel_reconstruct_pointcloud_base_table<<<blocksPerGrid, threadsPerBlock>>>(d_image_width_, d_image_height_, d_xL_rotate_x_, d_xL_rotate_y_, d_single_pattern_mapping_, d_R_1_, d_baseline_,
+																				 d_confidence_map_list_[3], d_unwrap_map_list_[0], d_point_cloud_map_, d_depth_map_);
+
+	if (1 == cuda_system_config_settings_machine_.Instance().firwmare_param_.use_global_light_filter)
+	{
+		kernel_remove_mask_result<<<blocksPerGrid, threadsPerBlock>>>(d_image_width_, d_image_height_, d_uncertain_map_,
+		cuda_system_config_settings_machine_.Instance().firwmare_param_.global_light_filter_threshold,d_depth_map_,d_point_cloud_map_);
+
+		// cudaDeviceSynchronize();
+
+		// cv::Mat uncertain_map(d_image_height_, d_image_width_, CV_8U, cv::Scalar(0));
+		// CHECK(cudaMemcpy(uncertain_map.data, d_uncertain_map_, 1 * d_image_height_ * d_image_width_ * sizeof(char), cudaMemcpyDeviceToHost));
+		// cv::imwrite("uncertain_map.bmp", uncertain_map);
+	}
 
 	// cv::Mat depth(d_image_height_,d_image_width_,CV_32FC1,cv::Scalar(0));
 	// CHECK(cudaMemcpy(depth.data, d_depth_map_, 1 * d_image_height_ * d_image_width_ * sizeof(float), cudaMemcpyDeviceToHost));
@@ -1271,6 +1312,15 @@ bool cuda_compute_merge_phase(int repetition_count)
 		d_repetition_merge_patterns_list_[2],d_repetition_merge_patterns_list_[3],d_repetition_merge_patterns_list_[4],d_repetition_merge_patterns_list_[5] ,
 		repetition_count,h_image_height_, h_image_width_, d_wrap_map_list_[3], d_confidence_map_list_[3]);
 
+	if (1 == cuda_system_config_settings_machine_.Instance().firwmare_param_.use_global_light_filter)
+	{
+
+		kernel_merge_computre_global_light<<<blocksPerGrid, threadsPerBlock>>>(d_image_width_, d_image_height_,d_repetition_merge_patterns_list_[0], d_repetition_merge_patterns_list_[1],
+		d_repetition_merge_patterns_list_[2],d_repetition_merge_patterns_list_[3],d_repetition_merge_patterns_list_[4],d_repetition_merge_patterns_list_[5] ,
+		repetition_count, cuda_system_config_settings_machine_.Instance().firwmare_param_.global_light_filter_b, d_direct_light_map_, d_global_light_map_, d_uncertain_map_);
+	}
+ 
+
 	return true;
 }
 
@@ -1352,6 +1402,14 @@ bool cuda_compute_merge_repetition_02_phase(int repetition_count,int phase_num)
 		d_repetition_02_merge_patterns_list_[14],d_repetition_02_merge_patterns_list_[15],d_repetition_02_merge_patterns_list_[16],d_repetition_02_merge_patterns_list_[17] ,
 		repetition_count,h_image_height_, h_image_width_, d_wrap_map_list_[3], d_confidence_map_list_[3]);
 
+	if (1 == cuda_system_config_settings_machine_.Instance().firwmare_param_.use_global_light_filter)
+	{
+
+		kernel_merge_computre_global_light<<<blocksPerGrid, threadsPerBlock>>>(d_image_width_, d_image_height_, d_repetition_02_merge_patterns_list_[12], d_repetition_02_merge_patterns_list_[13],
+		d_repetition_02_merge_patterns_list_[14],d_repetition_02_merge_patterns_list_[15],d_repetition_02_merge_patterns_list_[16],d_repetition_02_merge_patterns_list_[17],
+																			   repetition_count, cuda_system_config_settings_machine_.Instance().firwmare_param_.global_light_filter_b, d_direct_light_map_, d_global_light_map_, d_uncertain_map_);
+	}
+
 	if(1 == phase_num)
 	{
 		kernel_merge_brigntness_map<< <blocksPerGrid, threadsPerBlock >> >(d_repetition_02_merge_patterns_list_[18],repetition_count,h_image_height_, h_image_width_,d_brightness_map_);
@@ -1375,6 +1433,14 @@ bool cuda_compute_merge_repetition_02_phase(int repetition_count,int phase_num)
 		kernel_merge_six_step_phase_shift<<<blocksPerGrid, threadsPerBlock>>>(d_repetition_02_merge_patterns_list_[i + 0], d_repetition_02_merge_patterns_list_[i + 1],
 																			  d_repetition_02_merge_patterns_list_[i + 2], d_repetition_02_merge_patterns_list_[i + 3], d_repetition_02_merge_patterns_list_[i + 4], d_repetition_02_merge_patterns_list_[i + 5],
 																			  repetition_count, h_image_height_, h_image_width_, d_wrap_map_list_[7], d_confidence_map_list_[7]);
+
+		if (1 == cuda_system_config_settings_machine_.Instance().firwmare_param_.use_global_light_filter)
+		{
+
+			kernel_merge_computre_global_light<<<blocksPerGrid, threadsPerBlock>>>(d_image_width_, d_image_height_, d_repetition_02_merge_patterns_list_[i + 0], d_repetition_02_merge_patterns_list_[i + 1],
+																			  d_repetition_02_merge_patterns_list_[i + 2], d_repetition_02_merge_patterns_list_[i + 3], d_repetition_02_merge_patterns_list_[i + 4], d_repetition_02_merge_patterns_list_[i + 5],
+																			  repetition_count,cuda_system_config_settings_machine_.Instance().firwmare_param_.global_light_filter_b, d_direct_light_map_, d_global_light_map_, d_uncertain_map_);
+		}
 
 		kernel_merge_brigntness_map<<<blocksPerGrid, threadsPerBlock>>>(d_repetition_02_merge_patterns_list_[36], repetition_count, h_image_height_, h_image_width_,d_brightness_map_);
 
@@ -1481,6 +1547,20 @@ void fisher_filter(float fisher_confidence_val)
 	LOG(INFO)<<"fisher end"; 
 }
 
+void phase_monotonicity_filter(float monotonicity_val)
+{
+	// 传入的monotonicity_val应当在（-10， 2）之间，-10 - monotonicity_val之间的被认为是噪声，传入参数是0 - 100之间的数字
+	monotonicity_val = monotonicity_val / 100. - 0.5;
+	//按照每个像素均独立的思想来组织线程
+	cudaDeviceSynchronize();
+	LOG(INFO)<<"monotonicity start";
+	kernel_monotonicity_filter <<< blocksPerGrid, threadsPerBlock >>> (h_image_height_, h_image_width_, -10, monotonicity_val, d_fisher_mask_, d_unwrap_map_list_[0]);
+	cudaDeviceSynchronize();
+	kernel_removal_phase_base_mask <<< blocksPerGrid, threadsPerBlock >>> (h_image_height_, h_image_width_, d_unwrap_map_list_[0], d_fisher_mask_);
+	cudaDeviceSynchronize();
+	LOG(INFO)<<"monotonicity end";
+}
+
 void depth_filter(float depth_threshold_val)
 {
 	dim3 threadsPerBlock_p(4, 4);
@@ -1581,12 +1661,33 @@ int cuda_handle_model06_16()
 																			  d_repetition_02_merge_patterns_list_[4], d_repetition_02_merge_patterns_list_[5], d_repetition_02_merge_patterns_list_[6], d_repetition_02_merge_patterns_list_[7],
 																			  16, h_image_height_, h_image_width_, d_wrap_map_list_[3], d_confidence_map_list_[3]);
 
-    for(int i= 8;i<16;i++)
+	if (1 == cuda_system_config_settings_machine_.Instance().firwmare_param_.use_global_light_filter)
 	{
-		kernel_threshold_merge_patterns << <blocksPerGrid, threadsPerBlock >> > (d_image_width_,d_image_height_,
-		d_repetition_02_merge_patterns_list_[i], d_repetition_02_merge_patterns_list_[ThresholdMapSeries],
-        i-8,d_patterns_list_[Minsw8MapSeries]);
 
+		kernel_merge_computre_global_light<<<blocksPerGrid, threadsPerBlock>>>(d_image_width_, d_image_height_,d_repetition_02_merge_patterns_list_[2], d_repetition_02_merge_patterns_list_[3],
+																			  d_repetition_02_merge_patterns_list_[4], d_repetition_02_merge_patterns_list_[5], d_repetition_02_merge_patterns_list_[6], d_repetition_02_merge_patterns_list_[7],
+																			  16, cuda_system_config_settings_machine_.Instance().firwmare_param_.global_light_filter_b, d_direct_light_map_, d_global_light_map_, d_uncertain_map_);
+	}
+
+	for(int i= 8;i<16;i++)
+	{
+		kernel_threshold_merge_patterns<<<blocksPerGrid, threadsPerBlock>>>(d_image_width_, d_image_height_,
+																			d_repetition_02_merge_patterns_list_[i], d_repetition_02_merge_patterns_list_[ThresholdMapSeries],
+																			i - 8, d_patterns_list_[Minsw8MapSeries]);
+
+		// if (0 == cuda_system_config_settings_machine_.Instance().firwmare_param_.use_global_light_filter)
+		// {
+		// 	kernel_threshold_merge_patterns<<<blocksPerGrid, threadsPerBlock>>>(d_image_width_, d_image_height_,
+		// 																		d_repetition_02_merge_patterns_list_[i], d_repetition_02_merge_patterns_list_[ThresholdMapSeries],
+		// 																		i - 8, d_patterns_list_[Minsw8MapSeries]);
+		// }
+		// else
+		// {
+
+		// 	kernel_threshold_merge_patterns_with_uncertain<<<blocksPerGrid, threadsPerBlock>>>(d_image_width_, d_image_height_,
+		// 																					   d_repetition_02_merge_patterns_list_[i], d_repetition_02_merge_patterns_list_[ThresholdMapSeries],
+		// 																					   i - 8, d_patterns_list_[Minsw8MapSeries], d_direct_light_map_, d_global_light_map_, d_uncertain_map_);
+		// }
 	}
 
 	kernel_minsw8_to_bin<<<blocksPerGrid, threadsPerBlock>>>(d_image_width_, d_image_height_,
@@ -1621,6 +1722,14 @@ int cuda_handle_repetition_model06_16(int repetition_count)
 	// CHECK(cudaMemcpy(wrap_map.data, d_wrap_map_list_[3], 1 * d_image_height_ * d_image_width_ * sizeof(float), cudaMemcpyDeviceToHost));
 	// cv::imwrite("wrap_map.tiff", wrap_map);
 
+	if (1 == cuda_system_config_settings_machine_.Instance().firwmare_param_.use_global_light_filter)
+	{
+
+		kernel_merge_computre_global_light<<<blocksPerGrid, threadsPerBlock>>>(d_image_width_, d_image_height_, d_repetition_02_merge_patterns_list_[2], d_repetition_02_merge_patterns_list_[3],
+																			   d_repetition_02_merge_patterns_list_[4], d_repetition_02_merge_patterns_list_[5], d_repetition_02_merge_patterns_list_[6], d_repetition_02_merge_patterns_list_[7],
+																			   repetition_count, cuda_system_config_settings_machine_.Instance().firwmare_param_.global_light_filter_b, d_direct_light_map_, d_global_light_map_,d_uncertain_map_);
+	}
+
 	//相位校正
 				//相位校正
 	if (1 == cuda_system_config_settings_machine_.Instance().firwmare_param_.use_gray_rectify)
@@ -1635,10 +1744,23 @@ int cuda_handle_repetition_model06_16(int repetition_count)
  
 	for(int i= 8;i<16;i++)
 	{
-		kernel_threshold_merge_patterns << <blocksPerGrid, threadsPerBlock >> > (d_image_width_,d_image_height_,
-		d_repetition_02_merge_patterns_list_[i], d_repetition_02_merge_patterns_list_[ThresholdMapSeries],
-        i-8,d_patterns_list_[Minsw8MapSeries]);
+		kernel_threshold_merge_patterns<<<blocksPerGrid, threadsPerBlock>>>(d_image_width_, d_image_height_,
+																			d_repetition_02_merge_patterns_list_[i], d_repetition_02_merge_patterns_list_[ThresholdMapSeries],
+																			i - 8, d_patterns_list_[Minsw8MapSeries]);
 
+		// if (0 == cuda_system_config_settings_machine_.Instance().firwmare_param_.use_global_light_filter)
+		// {
+		// 	kernel_threshold_merge_patterns<<<blocksPerGrid, threadsPerBlock>>>(d_image_width_, d_image_height_,
+		// 																		d_repetition_02_merge_patterns_list_[i], d_repetition_02_merge_patterns_list_[ThresholdMapSeries],
+		// 																		i - 8, d_patterns_list_[Minsw8MapSeries]);
+		// }
+		// else
+		// {
+
+		// 	kernel_threshold_merge_patterns_with_uncertain<<<blocksPerGrid, threadsPerBlock>>>(d_image_width_, d_image_height_,
+		// 																					   d_repetition_02_merge_patterns_list_[i], d_repetition_02_merge_patterns_list_[ThresholdMapSeries],
+		// 																					   i - 8, d_patterns_list_[Minsw8MapSeries], d_direct_light_map_, d_global_light_map_, d_uncertain_map_);
+		// }
 	}
 
 	kernel_minsw8_to_bin<<<blocksPerGrid, threadsPerBlock>>>(d_image_width_, d_image_height_, d_minsw8_table_, d_patterns_list_[Minsw8MapSeries], d_patterns_list_[binMapSeries]);
@@ -1660,11 +1782,19 @@ int cuda_handle_repetition_model06(int repetition_count)
 
     kernel_generate_merge_threshold_map << <blocksPerGrid, threadsPerBlock >> > (d_image_width_,d_image_height_,
 	d_repetition_02_merge_patterns_list_[0], d_repetition_02_merge_patterns_list_[1],d_repetition_02_merge_patterns_list_[ThresholdMapSeries]);
- 
+
 	// 六步相移
 	kernel_merge_six_step_phase_shift<<<blocksPerGrid, threadsPerBlock>>>(d_repetition_02_merge_patterns_list_[2], d_repetition_02_merge_patterns_list_[3],
-																			  d_repetition_02_merge_patterns_list_[4], d_repetition_02_merge_patterns_list_[5], d_repetition_02_merge_patterns_list_[6], d_repetition_02_merge_patterns_list_[7],
-																			  repetition_count, h_image_height_, h_image_width_, d_wrap_map_list_[3], d_confidence_map_list_[3]);
+																		  d_repetition_02_merge_patterns_list_[4], d_repetition_02_merge_patterns_list_[5], d_repetition_02_merge_patterns_list_[6], d_repetition_02_merge_patterns_list_[7],
+																		  repetition_count, h_image_height_, h_image_width_, d_wrap_map_list_[3], d_confidence_map_list_[3]);
+
+	if (1 == cuda_system_config_settings_machine_.Instance().firwmare_param_.use_global_light_filter)
+	{
+
+		kernel_merge_computre_global_light<<<blocksPerGrid, threadsPerBlock>>>(d_image_width_, d_image_height_, d_repetition_02_merge_patterns_list_[2], d_repetition_02_merge_patterns_list_[3],
+																		  d_repetition_02_merge_patterns_list_[4], d_repetition_02_merge_patterns_list_[5], d_repetition_02_merge_patterns_list_[6], d_repetition_02_merge_patterns_list_[7],
+																		repetition_count, cuda_system_config_settings_machine_.Instance().firwmare_param_.global_light_filter_b, d_direct_light_map_, d_global_light_map_,d_uncertain_map_);
+	}
 
 	//相位校正
 				//相位校正
@@ -1677,13 +1807,26 @@ int cuda_handle_repetition_model06(int repetition_count)
 											   cuda_system_config_settings_machine_.Instance().firwmare_param_.gray_rectify_r);
 		cuda_rectify_six_step_pattern_phase(2, cuda_system_config_settings_machine_.Instance().firwmare_param_.gray_rectify_r);
 	}
- 
-	for(int i= 8;i<16;i++)
-	{
-		kernel_threshold_merge_patterns << <blocksPerGrid, threadsPerBlock >> > (d_image_width_,d_image_height_,
-		d_repetition_02_merge_patterns_list_[i], d_repetition_02_merge_patterns_list_[ThresholdMapSeries],
-        i-8,d_patterns_list_[Minsw8MapSeries]);
 
+	for (int i = 8; i < 16; i++)
+	{
+		kernel_threshold_merge_patterns<<<blocksPerGrid, threadsPerBlock>>>(d_image_width_, d_image_height_,
+																			d_repetition_02_merge_patterns_list_[i], d_repetition_02_merge_patterns_list_[ThresholdMapSeries],
+																			i - 8, d_patterns_list_[Minsw8MapSeries]);
+
+		// if (0 == cuda_system_config_settings_machine_.Instance().firwmare_param_.use_global_light_filter)
+		// {
+		// 	kernel_threshold_merge_patterns<<<blocksPerGrid, threadsPerBlock>>>(d_image_width_, d_image_height_,
+		// 																		d_repetition_02_merge_patterns_list_[i], d_repetition_02_merge_patterns_list_[ThresholdMapSeries],
+		// 																		i - 8, d_patterns_list_[Minsw8MapSeries]);
+		// }
+		// else
+		// {
+
+		// 	kernel_threshold_merge_patterns_with_uncertain<<<blocksPerGrid, threadsPerBlock>>>(d_image_width_, d_image_height_,
+		// 																		d_repetition_02_merge_patterns_list_[i], d_repetition_02_merge_patterns_list_[ThresholdMapSeries],
+		// 																		i - 8, d_patterns_list_[Minsw8MapSeries], d_direct_light_map_, d_global_light_map_, d_uncertain_map_);
+		// }
 	}
 
 	kernel_minsw8_to_bin<<<blocksPerGrid, threadsPerBlock>>>(d_image_width_, d_image_height_, d_minsw8_table_, d_patterns_list_[Minsw8MapSeries], d_patterns_list_[binMapSeries]);
@@ -1722,12 +1865,19 @@ int cuda_handle_minsw8_16(int flag)
 				// int i= 2; 
 				// kernel_six_step_phase_shift << <blocksPerGrid, threadsPerBlock >> > (d_image_width_,d_image_height_,d_patterns_list_[i+0],
 				// d_patterns_list_[i + 1], d_patterns_list_[i + 2],d_patterns_list_[i + 3],d_patterns_list_[i + 4],d_patterns_list_[i + 5]
-				// ,d_wrap_map_list_[3], d_confidence_map_list_[3]); 
+				// ,d_wrap_map_list_[3], d_confidence_map_list_[3]);
 
-			kernel_merge_six_step_phase_shift<<<blocksPerGrid, threadsPerBlock>>>(d_repetition_02_merge_patterns_list_[2], d_repetition_02_merge_patterns_list_[3],
-																			  d_repetition_02_merge_patterns_list_[4], d_repetition_02_merge_patterns_list_[5], d_repetition_02_merge_patterns_list_[6], d_repetition_02_merge_patterns_list_[7],
-																			  16, h_image_height_, h_image_width_, d_wrap_map_list_[3], d_confidence_map_list_[3]);
+				kernel_merge_six_step_phase_shift<<<blocksPerGrid, threadsPerBlock>>>(d_repetition_02_merge_patterns_list_[2], d_repetition_02_merge_patterns_list_[3],
+																					  d_repetition_02_merge_patterns_list_[4], d_repetition_02_merge_patterns_list_[5], d_repetition_02_merge_patterns_list_[6], d_repetition_02_merge_patterns_list_[7],
+																					  16, h_image_height_, h_image_width_, d_wrap_map_list_[3], d_confidence_map_list_[3]);
 
+				if (1 == cuda_system_config_settings_machine_.Instance().firwmare_param_.use_global_light_filter)
+				{
+
+					kernel_merge_computre_global_light<<<blocksPerGrid, threadsPerBlock>>>(d_image_width_, d_image_height_, d_repetition_02_merge_patterns_list_[2], d_repetition_02_merge_patterns_list_[3],
+																						   d_repetition_02_merge_patterns_list_[4], d_repetition_02_merge_patterns_list_[5], d_repetition_02_merge_patterns_list_[6], d_repetition_02_merge_patterns_list_[7],
+																						   16, cuda_system_config_settings_machine_.Instance().firwmare_param_.global_light_filter_b, d_direct_light_map_, d_global_light_map_,d_uncertain_map_);
+				}
 
 			//相位校正
 			if (1 == cuda_system_config_settings_machine_.Instance().firwmare_param_.use_gray_rectify)
@@ -1751,19 +1901,31 @@ int cuda_handle_minsw8_16(int flag)
 			break;
 	}
 
+	if (flag > 7 && flag < 16)
+	{
+		// kernel_threshold_patterns << <blocksPerGrid, threadsPerBlock >> > (d_image_width_,d_image_height_,d_patterns_list_[flag], d_patterns_list_[ThresholdMapSeries],
+		// flag-8,d_patterns_list_[Minsw8MapSeries]);
 
-    if(flag> 7 && flag< 16)
-    {
-        // kernel_threshold_patterns << <blocksPerGrid, threadsPerBlock >> > (d_image_width_,d_image_height_,d_patterns_list_[flag], d_patterns_list_[ThresholdMapSeries],
-        // flag-8,d_patterns_list_[Minsw8MapSeries]);
+		// if (0 == cuda_system_config_settings_machine_.Instance().firwmare_param_.use_global_light_filter)
+		{
+			kernel_threshold_merge_patterns<<<blocksPerGrid, threadsPerBlock>>>(d_image_width_, d_image_height_,
+																				d_repetition_02_merge_patterns_list_[flag], d_repetition_02_merge_patterns_list_[ThresholdMapSeries],
+																				flag - 8, d_patterns_list_[Minsw8MapSeries]);
 
-		kernel_threshold_merge_patterns << <blocksPerGrid, threadsPerBlock >> > (d_image_width_,d_image_height_,
-		d_repetition_02_merge_patterns_list_[flag], d_repetition_02_merge_patterns_list_[ThresholdMapSeries],
-        flag-8,d_patterns_list_[Minsw8MapSeries]);
+			// kernel_threshold_merge_patterns<<<blocksPerGrid, threadsPerBlock>>>(d_image_width_, d_image_height_,
+			// 																	d_repetition_02_merge_patterns_list_[i], d_repetition_02_merge_patterns_list_[ThresholdMapSeries],
+			// 																	i - 8, d_patterns_list_[Minsw8MapSeries]);
+		}
+		// else
+		// {
 
-    }
+		// 	kernel_threshold_merge_patterns_with_uncertain<<<blocksPerGrid, threadsPerBlock>>>(d_image_width_, d_image_height_,
+		// 																					   d_repetition_02_merge_patterns_list_[flag], d_repetition_02_merge_patterns_list_[ThresholdMapSeries],
+		// 																					   flag - 8, d_patterns_list_[Minsw8MapSeries], d_direct_light_map_, d_global_light_map_, d_uncertain_map_);
+		// }
+	}
 
-    if(15 == flag)
+	if(15 == flag)
     {
         // kernel_minsw8_to_bin << <blocksPerGrid, threadsPerBlock >> > (d_image_width_,d_image_height_,d_minsw8_table_,d_patterns_list_[Minsw8MapSeries], d_patterns_list_[binMapSeries]);
 
@@ -1815,11 +1977,40 @@ int cuda_handle_minsw8_16(int flag)
 		{ 
 
 				//六步相移
-				int i= 2; 
+				int i= 2;
 
-				kernel_six_step_phase_shift << <blocksPerGrid, threadsPerBlock >> > (d_image_width_,d_image_height_,d_patterns_list_[i+0],
-				d_patterns_list_[i + 1], d_patterns_list_[i + 2],d_patterns_list_[i + 3],d_patterns_list_[i + 4],d_patterns_list_[i + 5]
-				,d_wrap_map_list_[3], d_confidence_map_list_[3]); 
+				// kernel_six_step_phase_shift_with_average<<<blocksPerGrid, threadsPerBlock>>>(d_image_width_, d_image_height_, d_patterns_list_[i + 0],
+				// 																			 d_patterns_list_[i + 1], d_patterns_list_[i + 2], d_patterns_list_[i + 3], d_patterns_list_[i + 4],
+				// 																			 d_patterns_list_[i + 5], d_wrap_map_list_[3], d_confidence_map_list_[3], d_patterns_list_[ThresholdMapSeries], d_brightness_map_);
+
+				kernel_six_step_phase_shift<<<blocksPerGrid, threadsPerBlock>>>(d_image_width_, d_image_height_, d_patterns_list_[i + 0],
+																				d_patterns_list_[i + 1], d_patterns_list_[i + 2], d_patterns_list_[i + 3], d_patterns_list_[i + 4], d_patterns_list_[i + 5], d_wrap_map_list_[3], d_confidence_map_list_[3]);
+
+				if (1 == cuda_system_config_settings_machine_.Instance().firwmare_param_.use_global_light_filter)
+				{
+					// kernel_six_step_phase_shift_global << <blocksPerGrid, threadsPerBlock >> > (d_image_width_,d_image_height_,d_patterns_list_[i+0],
+					// d_patterns_list_[i + 1], d_patterns_list_[i + 2],d_patterns_list_[i + 3],d_patterns_list_[i + 4],d_patterns_list_[i + 5]
+					// ,d_wrap_map_list_[3], d_confidence_map_list_[3],0.25,
+					// d_direct_light_map_,d_global_light_map_); //cuda_system_config_settings_machine_.Instance().firwmare_param_.global_light_filter_b
+
+					kernel_computre_global_light_with_background<<<blocksPerGrid, threadsPerBlock>>>(d_image_width_, d_image_height_, d_patterns_list_[i + 0],
+																					 d_patterns_list_[i + 1], d_patterns_list_[i + 2], d_patterns_list_[i + 3], d_patterns_list_[i + 4], d_patterns_list_[i + 5],
+																					d_patterns_list_[0],d_patterns_list_[1] ,cuda_system_config_settings_machine_.Instance().firwmare_param_.global_light_filter_b,
+																					  d_direct_light_map_, d_global_light_map_,d_uncertain_map_);
+
+					cudaDeviceSynchronize();
+					cv::Mat black_map(d_image_height_, d_image_width_, CV_8U, cv::Scalar(0));
+					CHECK(cudaMemcpy(black_map.data, d_patterns_list_[1], 1 * d_image_height_ * d_image_width_ * sizeof(char), cudaMemcpyDeviceToHost));
+					cv::imwrite("black_map.bmp", black_map);
+
+					cv::Mat direct_map(d_image_height_, d_image_width_, CV_8U, cv::Scalar(0));
+					CHECK(cudaMemcpy(direct_map.data, d_direct_light_map_, 1 * d_image_height_ * d_image_width_ * sizeof(char), cudaMemcpyDeviceToHost));
+					cv::imwrite("direct_map.bmp", direct_map);
+
+					cv::Mat global_map(d_image_height_, d_image_width_, CV_8U, cv::Scalar(0));
+					CHECK(cudaMemcpy(global_map.data, d_global_light_map_, 1 * d_image_height_ * d_image_width_ * sizeof(char), cudaMemcpyDeviceToHost));
+					cv::imwrite("global_map.bmp", global_map);
+				}
 
 			//相位校正
 			if (1 == cuda_system_config_settings_machine_.Instance().firwmare_param_.use_gray_rectify)
@@ -1846,9 +2037,25 @@ int cuda_handle_minsw8_16(int flag)
 
     if(flag> 7 && flag< 16)
     {
-        kernel_threshold_patterns << <blocksPerGrid, threadsPerBlock >> > (d_image_width_,d_image_height_,d_patterns_list_[flag], d_patterns_list_[ThresholdMapSeries],
-        flag-8,d_patterns_list_[Minsw8MapSeries]);
-    }
+
+		// if (0 == cuda_system_config_settings_machine_.Instance().firwmare_param_.use_global_light_filter)
+		{
+			kernel_threshold_patterns<<<blocksPerGrid, threadsPerBlock>>>(d_image_width_, d_image_height_, d_patterns_list_[flag], d_patterns_list_[ThresholdMapSeries],
+																		  flag - 8, d_patterns_list_[Minsw8MapSeries]);
+		}
+		// else
+		// {
+
+		// 	kernel_threshold_patterns_with_uncertain<<<blocksPerGrid, threadsPerBlock>>>(d_image_width_, d_image_height_, d_patterns_list_[flag], d_patterns_list_[ThresholdMapSeries],
+		// 																				 flag - 8, d_patterns_list_[Minsw8MapSeries], d_direct_light_map_, d_global_light_map_, d_uncertain_map_);
+
+			// cudaDeviceSynchronize();
+
+			// cv::Mat uncertain_map(d_image_height_, d_image_width_, CV_8U, cv::Scalar(0));
+			// CHECK(cudaMemcpy(uncertain_map.data, d_uncertain_map_, 1 * d_image_height_ * d_image_width_ * sizeof(char), cudaMemcpyDeviceToHost));
+			// cv::imwrite("uncertain_map.bmp", uncertain_map);
+		// }
+	}
 
     if(15 == flag)
     {

@@ -2337,6 +2337,347 @@ bool DfSolution::reconstructPatterns05(std::vector<cv::Mat> patterns, struct Cam
 
 }
 
+bool DfSolution::reconstructPatternsTest(std::vector<cv::Mat> patterns, struct CameraCalibParam calib_param, std::string pointcloud_path)
+{
+	if (patterns.empty())
+	{
+		return false;
+	}
+
+	std::vector<cv::Mat> phase_shift_patterns_img(patterns.begin() + +2 , patterns.begin() + 8);
+	std::vector<cv::Mat> minsw_gray_code_patterns_img(patterns.begin() + 8, patterns.begin() + 8 + 8);
+	std::vector<cv::Mat> inv_minsw_gray_code_patterns_img(patterns.begin() + 16, patterns.begin() + 16 + 8);
+
+
+	DF_Encode encode;
+	cv::Mat mask;
+
+	cv::Mat wrap, confidence,global, average, brightness;
+
+
+	bool ret = encode.computePhaseShift(phase_shift_patterns_img, wrap, confidence, global, average, brightness, mask);
+
+	int nr = patterns[0].rows;
+	int nc = patterns[0].cols;
+
+
+	cv::Mat white_map = patterns[0].clone();
+	cv::Mat black_map = patterns[1].clone();
+
+	cv::Mat test_max_map(nr, nc, CV_8U, cv::Scalar(0));
+	cv::Mat test_min_map(nr, nc, CV_8U, cv::Scalar(255));
+
+	for (int i = 2; i < 8; i++)
+	{
+
+		std::cout << "i: " << i << std::endl;
+		cv::Mat image = patterns[i].clone();
+	  
+		cv::blur(image, image, cv::Size(5, 5));
+
+		for (int r = 0; r < nr; r++)
+		{ 
+			uchar* ptr_p = image.ptr<uchar>(r);
+			uchar* ptr_d = test_max_map.ptr<uchar>(r);
+			uchar* ptr_g = test_min_map.ptr<uchar>(r);
+
+			for (int c = 0; c < nc; c++)
+			{
+				if (ptr_p[c] > ptr_d[c])
+				{
+					ptr_d[c] = ptr_p[c];
+				}
+
+				if (ptr_p[c] < ptr_g[c])
+				{
+					ptr_g[c] = ptr_p[c];
+				}
+			}
+
+		}
+
+		std::cout << "i: " << i << std::endl;
+	}
+
+	cv::imwrite("../global_all.bmp", test_max_map);
+	cv::imwrite("../direct_all.bmp", test_min_map);
+
+
+	cv::Mat test_direct_map(nr, nc, CV_8U, cv::Scalar(0));
+	cv::Mat test_global_map(nr, nc, CV_8U, cv::Scalar(255));
+
+	float b = 0.30;
+
+	for (int r = 0; r < nr; r++)
+	{ 
+		uchar* ptr_max = test_max_map.ptr<uchar>(r);
+		uchar* ptr_min = test_min_map.ptr<uchar>(r);
+
+		uchar* ptr_direct = test_direct_map.ptr<uchar>(r);
+		uchar* ptr_global = test_global_map.ptr<uchar>(r);
+
+		for (int c = 0; c < nc; c++)
+		{
+
+			float d = (ptr_max[c] - ptr_min[c]) / (1 - b);
+
+			if (d > 255)
+			{
+				ptr_direct[c] = 255;
+			}
+			else
+			{
+				ptr_direct[c] = d;
+			}
+   
+			float g = 2 * (ptr_min[c] - ptr_max[c] *
+				b) / (1 - b * b);
+
+			if (g < 0)
+			{
+				ptr_global[c] = 0 ;
+			}
+			else
+			{
+				ptr_global[c] = g;
+			}
+		 
+		}
+
+	}
+
+
+	//cv::Mat white_map = minsw_gray_code_patterns_img[0] + inv_minsw_gray_code_patterns_img[0];
+
+	std::vector<cv::Mat> threshold_list;
+
+	cv::Mat threshold_mask(nr, nc, CV_8U, cv::Scalar(255));
+
+	for (int p_i = 0; p_i < minsw_gray_code_patterns_img.size(); p_i++)
+	{
+
+		cv::Mat threshold_map(nr, nc, CV_8U, cv::Scalar(128));
+
+		for (int r = 0; r < nr; r++)
+		{
+			uchar* ptr_b = inv_minsw_gray_code_patterns_img[p_i].ptr<uchar>(r);
+			uchar* ptr_w = minsw_gray_code_patterns_img[p_i].ptr<uchar>(r);
+			uchar* ptr_t = threshold_map.ptr<uchar>(r);
+			uchar* ptr_m = threshold_mask.ptr<uchar>(r);
+
+			for (int c = 0; c < nc; c++)
+			{
+				uchar diff = std::abs(ptr_w[c] - ptr_b[c]);
+
+				if (diff < ptr_m[c])
+				{
+					ptr_m[c] = diff;
+				}
+
+				float d = ptr_w[c] + ptr_b[c];
+				ptr_t[c] = 0.5 + d / 2.0;
+			}
+
+		}
+
+		threshold_list.push_back(threshold_map.clone());
+	}
+
+
+
+	cv::Mat threshold_map = (test_max_map - test_min_map) * 0.5 + test_min_map;
+
+	cv::Mat  sw_k_map;
+	cv::Mat  sw_mask;
+	cv::Mat  test_uncertain;
+	//minsw_gray_code_patterns_img.pop_back();
+	//minsw_gray_code_patterns_img.pop_back();
+	ret = encode.decodeMinswGrayCode(minsw_gray_code_patterns_img, threshold_map,
+		test_direct_map,test_global_map, test_uncertain,sw_k_map);
+
+	cv::Mat test_global = global.clone();
+	cv::Mat test_direct = confidence.clone();
+
+	cv::Mat minsw_map(nr, nc, CV_32F, cv::Scalar(0));
+
+	for (int r = 0; r < nr; r++)
+	{
+		float* ptr_sw = minsw_map.ptr<float>(r);
+		ushort* ptr_k2 = sw_k_map.ptr<ushort>(r);
+		for (int c = 0; c < nc; c++)
+		{
+			int bin_value = -1;
+			bool ret = encode.minsw8CodeToValue(ptr_k2[c], bin_value);
+
+			if (ret)
+			{
+				ptr_sw[c] = bin_value;
+			}
+			else
+			{
+				ptr_sw[c] = -1;
+			}
+		}
+	}
+
+
+	cv::Mat k2_map;
+
+	minsw_map.convertTo(k2_map, CV_16U);
+
+	cv::Mat k1_map(nr, nc, CV_16U, cv::Scalar(0));
+
+
+	for (int r = 0; r < nr; r++)
+	{
+		ushort* ptr_k2 = k2_map.ptr<ushort>(r);
+		ushort* ptr_k1 = k1_map.ptr<ushort>(r);
+		for (int c = 0; c < nc; c++)
+		{
+			ptr_k1[c] = ptr_k2[c] / 2;
+		}
+	}
+
+
+
+	// 
+	cv::Mat unwrap;
+	ret = encode.unwrapBase2Kmap(wrap, k1_map, k2_map, unwrap);
+
+	cv::Mat test_confidence = confidence.clone();
+	cv::Mat test_average = average.clone();
+	cv::Mat test_brightness = brightness.clone(); 
+
+	/*****************************************************************************************************/
+
+	cv::Mat decode_color_map = k2_map.clone();
+	decode_color_map.convertTo(decode_color_map, CV_8U);
+	cv::applyColorMap(decode_color_map, decode_color_map, cv::COLORMAP_JET);
+
+
+	std::string save_decode_dir = pointcloud_path + "/decode_test.bmp";
+	cv::imwrite(save_decode_dir, decode_color_map);
+	/********************************************************************************************************/
+
+
+	float confidence_val = 1;
+	float ver_period = 128;
+
+	cv::Mat mask_phase(nr, nc, CV_8UC1, cv::Scalar(255));
+
+	cv::Mat threshold_uncertain = 255 - test_uncertain;
+	
+	unwrap /= ver_period;
+	encode.selectMaskBaseConfidence(confidence, confidence_val, mask_phase);
+	//encode.selectMaskBaseConfidence(threshold_mask, confidence_val, mask_phase);
+	encode.selectMaskBaseConfidence(threshold_uncertain, 40, mask_phase);
+	//encode_machine_.selectMaskBaseConfidence(hor_confidence_map_4, confidence_val, unwrap_mask);
+
+
+	encode.maskMap(mask_phase, unwrap);
+
+	unwrap.convertTo(unwrap, CV_64FC1);
+
+	/***********************************************************************************/
+
+	clock_t startTime, endTime;
+	startTime = clock();
+
+
+	LookupTableFunction lookup_table_machine_;
+	//LookupTableFunction lookup_table_machine;
+	lookup_table_machine_.setCalibData(calib_param);
+	lookup_table_machine_.setProjectorVersion(projector_version_);
+	lookup_table_machine_.setImageResolution(nc, nr);
+
+	cv::Mat xL_rotate_x;
+	cv::Mat xL_rotate_y;
+	cv::Mat R1;
+	cv::Mat pattern_mapping;
+	cv::Mat pattern_minimapping;
+	//lookup_table_machine_.generateLookTable(xL_rotate_x, xL_rotate_y, R1, pattern_mapping);
+
+	//lookup_table_machine_.readTable("../", 1200, 1920);
+
+	//MiniLookupTableFunction minilooktable_machine;
+	//minilooktable_machine.setCameraResolution(nc, nr);
+	//minilooktable_machine.setProjectorVersion(camera_version_);
+	//minilooktable_machine.setCalibData(calib_param);
+	cv::Mat xL_rotate_x_new;
+	cv::Mat xL_rotate_y_new;
+	cv::Mat R1_new;
+	cv::Mat pattern_mapping_new;
+	cv::Mat pattern_minimapping_new;
+
+
+	std::cout << "Start Generate LookTable Param" << std::endl;
+	//bool ok = looktable_machine.generateLookTable(xL_rotate_x, xL_rotate_y, rectify_R1, pattern_mapping);
+	bool ok = lookup_table_machine_.generateLookTable(xL_rotate_x_new, xL_rotate_y_new, R1_new, pattern_mapping_new);
+
+	endTime = clock();
+	std::cout << "The run time is: " << (double)(endTime - startTime) / CLOCKS_PER_SEC << "s" << endl;
+
+
+	/************************************************************************************/
+
+
+
+	cv::Mat z_map_table;
+	//LookupTableFunction lookup_table_machine_;
+
+	lookup_table_machine_.rebuildData(unwrap, 1, z_map_table, mask_phase);
+
+	cv::Mat deep_map_table;
+
+	std::vector<cv::Point3f> points_cloud;
+	ret = lookup_table_machine_.generate_pointcloud(z_map_table, mask_phase, deep_map_table);
+
+
+	startTime = clock();
+	FilterModule filter_machine;
+	//相机像素为5.4um、焦距12mm。dot_spacing = 5.4*distance/12 m，典型值0.54mm（1200） 
+	//filter_machine.RadiusOutlierRemoval(deep_map_table, unwrap_mask, 0.5, 3, 3);
+	//filter_machine.statisticOutlierRemoval(deep_map_table, 6, 1);
+	endTime = clock();
+	std::cout << "statisticOutlierRemoval run time is: " << (double)(endTime - startTime) / CLOCKS_PER_SEC << "s" << endl;
+
+	/*********************************************************************************/
+
+	std::string work_path_ = pointcloud_path + "/test";
+
+
+	std::vector<cv::Mat> deep_channels;
+	cv::split(deep_map_table, deep_channels);
+	cv::Mat z_map;
+	deep_channels[2].convertTo(z_map, CV_32F);
+
+
+	std::string save_err_tiff = work_path_ + "_err_table_test.tiff";
+	std::string save_depth_tiff = work_path_ + "_depth_table_test.tiff";
+	std::string save_points_dir = work_path_ + "_points_table_test.xyz";
+	std::string save_depth_txt_dir = work_path_ + "_depth_table_test.txt";
+	std::string save_confidence_dir = work_path_ + "_confidence_table_test.bmp";
+	std::string save_depth_dir = work_path_ + "_depth_table_test.bmp";
+	std::string save_brightness_dir = work_path_ + "_brightness_table_test.bmp";
+	std::string save_points_z_dir = work_path_ + "point_z_table_test.tiff";
+
+	cv::Mat color_map, grey_map;
+	MapToColor(deep_map_table, color_map, grey_map, 300, 2000);
+	MaskZMap(color_map, mask_phase);
+
+
+	//cv::imwrite(save_err_tiff, err_map);
+	cv::imwrite(save_depth_tiff, z_map);
+	cv::imwrite(save_brightness_dir, white_map);
+	cv::imwrite(save_depth_dir, color_map);
+	SavePointToTxt(deep_map_table, save_points_dir, white_map);
+
+
+	std::cout << "pointcloud: " << save_points_dir;
+
+	return true;
+}
+
 
 bool DfSolution::reconstructPatterns0602(std::vector<cv::Mat> patterns, struct CameraCalibParam calib_param, std::string pointcloud_path)
 {

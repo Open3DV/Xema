@@ -177,9 +177,11 @@ int Scan3D::reopenCamera()
 
 int Scan3D::initCache()
 {
-    std::memset(buff_brightness_,0,sizeof(char)*image_width_*image_height_);
-    std::memset(buff_depth_,0,sizeof(float)*image_width_*image_height_);
-    std::memset(buff_pointcloud_,0,sizeof(float)*image_width_*image_height_*3); 
+    std::memset(buff_brightness_, 0, sizeof(char) * image_width_ * image_height_);
+    std::memset(buff_depth_, 0, sizeof(float) * image_width_ * image_height_);
+    std::memset(buff_pointcloud_, 0, sizeof(float) * image_width_ * image_height_ * 3);
+
+
 }
 
 bool Scan3D::cameraIsValid()
@@ -1189,7 +1191,7 @@ int Scan3D::captureRaw08(unsigned char *buff)
 
     unsigned char *img_ptr= new unsigned char[image_width_*image_height_];
 
-    for (int i = 0; i < 26; i++)
+    for (int i = 0; i < 24; i++)
     {
         LOG(INFO)<<"grap "<<i<<" image:";
         if (!camera_->grap(img_ptr))
@@ -1207,7 +1209,7 @@ int Scan3D::captureRaw08(unsigned char *buff)
     if (1 != generate_brightness_model_)
     {
         captureTextureImage(generate_brightness_model_, generate_brightness_exposure_, img_ptr);
-        memcpy(buff + img_size * 18, img_ptr, img_size);
+        memcpy(buff + img_size * 0, img_ptr, img_size);
     }
 
     delete[] img_ptr;
@@ -1699,7 +1701,10 @@ int Scan3D::captureFrame06Repetition(int repetition_count)
     delete[] img_ptr;
 
     cuda_handle_repetition_model06(repetition_count); 
- 
+    if (fisher_confidence_val_ > -50)
+    {
+        phase_monotonicity_filter(fisher_confidence_val_ / 2 + 25);
+    }
     cuda_normalize_phase(0); 
     LOG(INFO) << "parallel_cuda_unwrap_phase";
     cuda_generate_pointcloud_base_table();
@@ -2070,7 +2075,11 @@ int Scan3D::captureFrame06RepetitionColor(int repetition_count)
             else
             {
                 LOG(INFO) << "grad failed!";
-                camera_->streamOff(); 
+                camera_->streamOff();
+                if (g_i == 0)
+                {
+                    return DF_ERROR_LOST_TRIGGER;
+                } 
 
                 frame_status = DF_ERROR_CAMERA_GRAP;
                 return DF_ERROR_CAMERA_GRAP;
@@ -2088,7 +2097,10 @@ int Scan3D::captureFrame06RepetitionColor(int repetition_count)
  
 
     cuda_handle_repetition_model06(repetition_count); 
- 
+    if (fisher_confidence_val_ > -50)
+    {
+        phase_monotonicity_filter(fisher_confidence_val_ / 2 + 25);
+    }
     cuda_normalize_phase(0); 
     LOG(INFO) << "parallel_cuda_unwrap_phase";
     cuda_generate_pointcloud_base_table();
@@ -2202,6 +2214,11 @@ int Scan3D::captureFrame06HdrColor()
             {
 
                 camera_->streamOff();
+                if (g_i == 0)
+                {
+                    return DF_ERROR_LOST_TRIGGER;
+                }
+
                 return DF_ERROR_CAMERA_GRAP;
             }
             LOG(INFO) << "finished!";
@@ -2225,6 +2242,10 @@ int Scan3D::captureFrame06HdrColor()
 
             if (15 == g_i)
             {
+                if (fisher_confidence_val_ > -50)
+                {
+                    phase_monotonicity_filter(fisher_confidence_val_ / 2 + 25);
+                }
                 cuda_normalize_phase(0);
                 cuda_generate_pointcloud_base_table();
                 LOG(INFO) << "cuda_generate_pointcloud_base_table";
@@ -2377,6 +2398,10 @@ int Scan3D::captureFrame06Hdr()
 
             if (15 == g_i)
             {
+                if (fisher_confidence_val_ > -50)
+                {
+                    phase_monotonicity_filter(fisher_confidence_val_ / 2 + 25);
+                }
                 cuda_normalize_phase(0);
                 cuda_generate_pointcloud_base_table();
                 LOG(INFO) << "cuda_generate_pointcloud_base_table";
@@ -2513,7 +2538,10 @@ int Scan3D::captureFrame06RepetitionMono12(int repetition_count)
     // setPixelFormat(8);
 
     cuda_handle_repetition_model06_16(repetition_count);
-
+    if (fisher_confidence_val_ > -50)
+    {
+        phase_monotonicity_filter(fisher_confidence_val_ / 2 + 25);
+    }
     cuda_normalize_phase(0);
     LOG(INFO) << "parallel_cuda_unwrap_phase";
     cuda_generate_pointcloud_base_table(); 
@@ -2639,6 +2667,10 @@ int Scan3D::captureFrame06HdrMono12()
 
             if (15 == g_i)
             {
+                if (fisher_confidence_val_ > -50)
+                {
+                    phase_monotonicity_filter(fisher_confidence_val_ / 2 + 25);
+                }
                 cuda_normalize_phase(0);
                 cuda_generate_pointcloud_base_table();
                 LOG(INFO) << "cuda_generate_pointcloud_base_table";
@@ -2747,6 +2779,10 @@ int Scan3D::captureFrame06Mono12()
 
             if (15 == g_i)
             {
+                if (fisher_confidence_val_ > -50)
+                {
+                    phase_monotonicity_filter(fisher_confidence_val_ / 2 + 25);
+                }
                 cuda_normalize_phase(0);
                 cuda_generate_pointcloud_base_table();
                 LOG(INFO) << "cuda_generate_pointcloud_base_table";
@@ -2870,6 +2906,10 @@ int Scan3D::captureFrame06()
   
         if(15 == i)
         { 
+            if (fisher_confidence_val_ > -50)
+            {
+                phase_monotonicity_filter(fisher_confidence_val_ / 2 + 25);
+            }
             cuda_normalize_phase(0); 
             cuda_generate_pointcloud_base_table();
             LOG(INFO) << "cuda_generate_pointcloud_base_table"; 
@@ -2959,6 +2999,10 @@ int Scan3D::captureFrame06Color()
         if (!camera_->grap(img.data))
         { 
             camera_->streamOff();
+            if (i == 0)
+            {
+                return DF_ERROR_LOST_TRIGGER;
+            }
             return DF_ERROR_CAMERA_GRAP;
         }
         LOG(INFO)<<"finished!";
@@ -2983,6 +3027,10 @@ int Scan3D::captureFrame06Color()
   
         if(15 == i)
         { 
+            if (fisher_confidence_val_ > -50)
+            {
+                phase_monotonicity_filter(fisher_confidence_val_ / 2 + 25);
+            }
             cuda_normalize_phase(0); 
             cuda_generate_pointcloud_base_table();
             LOG(INFO) << "cuda_generate_pointcloud_base_table"; 

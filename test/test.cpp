@@ -99,6 +99,7 @@ void read_04();
 void read_05();
 void read_04_color();
 void read_06();
+void read_test();
 void generate_patterns_06();
 void capture_04_repetition_02(int repetition);
 void read_04_repetition_02();
@@ -222,6 +223,10 @@ int main(int argc, char* argv[])
 		else if ("patterns-06" == model)
 		{
 			read_06();
+		}
+		else if ("patterns-test" == model)
+		{
+			read_test();
 		}
 		else if ("gen-patterns-06" == model)
 		{
@@ -863,6 +868,38 @@ void generate_patterns_06()
  
 }
 
+}
+
+
+void read_test()
+{
+	struct CameraCalibParam calibration_param_;
+	DfSolution solution_machine_;
+	std::vector<cv::Mat> patterns_;
+
+	bool ret = solution_machine_.readImages(patterns_path, patterns_);
+
+	if (!ret)
+	{
+		std::cout << "Read Image Error!";
+	}
+
+	ret = solution_machine_.readCameraCalibData(calib_path, calibration_param_);
+
+	if (!ret)
+	{
+		std::cout << "Read Calib Param Error!" << std::endl;
+	}
+
+	ret = solution_machine_.setProjectorVersion(version_number);
+	if (!ret)
+	{
+		std::cout << "Set Camera Version Error!" << std::endl;
+		return;
+	}
+
+
+	solution_machine_.reconstructPatternsTest(patterns_, calibration_param_, pointcloud_path);
 }
 
 void read_06()
