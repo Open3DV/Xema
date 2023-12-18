@@ -819,6 +819,18 @@ bool CameraBasler::getPixelFormat(int &val)
     {
         val = 12;
     }
+    if("BayerRG8" == format_str)
+    {
+        val = 8;
+    }
+    else if("BayerRG10" == format_str)
+    {
+        val = 10;
+    }
+    else if("BayerRG12" == format_str)
+    {
+        val = 12;
+    }
     else
     {
         val = 0;
@@ -845,7 +857,21 @@ bool CameraBasler::setPixelFormat(int val)
         bool isAvail = PylonDeviceFeatureIsAvailable(hDev_, "EnumEntry_PixelFormat_Mono8");
         if (isAvail)
         {
-            errRes = PylonDeviceFeatureFromString(hDev_, "PixelFormat", "Mono8");
+            
+            XemaPixelType type;
+            getPixelType(type);
+
+            if (type == XemaPixelType::Mono)
+            { 
+                errRes = PylonDeviceFeatureFromString(hDev_, "PixelFormat", "Mono8");
+            }
+            else if (type == XemaPixelType::BayerRG8)
+            { 
+                errRes = PylonDeviceFeatureFromString(hDev_, "PixelFormat", "BayerRG8");
+            }
+            
+
+
             if (GENAPI_E_OK != errRes)
             {
                 LOG(INFO) << "Set Gain Failed!";
@@ -866,7 +892,21 @@ bool CameraBasler::setPixelFormat(int val)
         bool isAvail = PylonDeviceFeatureIsAvailable(hDev_, "EnumEntry_PixelFormat_Mono10");
         if (isAvail)
         {
-            errRes = PylonDeviceFeatureFromString(hDev_, "PixelFormat", "Mono10");
+            
+            XemaPixelType type;
+            getPixelType(type);
+
+            if (type == XemaPixelType::Mono)
+            { 
+                errRes = PylonDeviceFeatureFromString(hDev_, "PixelFormat", "Mono10");
+            }
+            else if (type == XemaPixelType::BayerRG8)
+            { 
+                errRes = PylonDeviceFeatureFromString(hDev_, "PixelFormat", "BayerRG10");
+            }
+
+
+
             if (GENAPI_E_OK != errRes)
             {
                 LOG(INFO) << "Set Gain Failed!";
@@ -887,7 +927,20 @@ bool CameraBasler::setPixelFormat(int val)
         bool isAvail = PylonDeviceFeatureIsAvailable(hDev_, "EnumEntry_PixelFormat_Mono12");
         if (isAvail)
         {
-            errRes = PylonDeviceFeatureFromString(hDev_, "PixelFormat", "Mono12");
+            
+            XemaPixelType type;
+            getPixelType(type);
+
+            if (type == XemaPixelType::Mono)
+            { 
+                errRes = PylonDeviceFeatureFromString(hDev_, "PixelFormat", "Mono12");
+            }
+            else if (type == XemaPixelType::BayerRG8)
+            { 
+                errRes = PylonDeviceFeatureFromString(hDev_, "PixelFormat", "BayerRG12");
+            }
+
+
             if (GENAPI_E_OK != errRes)
             {
                 LOG(INFO) << "Set Gain Failed!";

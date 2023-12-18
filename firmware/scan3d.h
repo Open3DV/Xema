@@ -100,6 +100,8 @@ public:
 
     int captureFrame06RepetitionColor(int repetition_count);
     
+    int captureFrame06RepetitionColorMono12(int repetition_count);
+    
     bool captureFrame03();
     
     bool captureFrame01();
@@ -134,6 +136,8 @@ public:
     int setPixelFormat(int bit);
 
     int getPixelFormat(int &bit);
+
+    int bayerToRgb(unsigned short* src, unsigned short* dst);
 
 private:
  
