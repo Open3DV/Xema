@@ -228,6 +228,10 @@ int LightCrafter3010::SetLedCurrent(unsigned short R, unsigned short G, unsigned
     if (R>1023) R=1023;
     if (G>1023) G=1023;
     if (B>1023) B=1023;
+
+    if (R< 91)  R=91;
+    if (G< 91)  G=91;
+    if (B< 91)  B=91;
     
     char buffer[6];
     memset(buffer,0,6*sizeof(char));
