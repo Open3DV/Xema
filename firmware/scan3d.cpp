@@ -2728,7 +2728,7 @@ int Scan3D::captureFrame06Mono12()
     int bits = 0;
 
     if(DF_SUCCESS == getPixelFormat(bits))
-    {
+    { 
         if(12 != bits)
         {
             if(setPixelFormat(12))
@@ -2737,8 +2737,14 @@ int Scan3D::captureFrame06Mono12()
                 return DF_FAILED;
             }
         }
+
+    }
+    else
+    { 
+        LOG(ERROR)<<"Pixel Bits: "<<bits;
     }
     // setPixelFormat(12);
+
 
     if (!camera_->streamOn())
     {
@@ -3972,7 +3978,8 @@ int Scan3D::getPixelFormat(int &bit)
 
     if(!ok)
     {
-        bit = 8;
+        // bit = 8;
+        LOG(ERROR)<<"getPixelFormat";
         return DF_FAILED;
     }
 

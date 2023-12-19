@@ -791,6 +791,7 @@ bool CameraBasler::getPixelFormat(int &val)
 
     val = 0;
     char buf[256];
+    std::memset(buf,'\0',256);
     size_t siz = sizeof( buf );
 
     GENAPIC_RESULT              res;                      /* Return value of pylon methods. */
@@ -806,10 +807,11 @@ bool CameraBasler::getPixelFormat(int &val)
     LOG(INFO)<<"PixelFormat: "<<buf;
 
     std::string format_str(buf);
+  
 
     if("Mono8" == format_str)
     {
-        val = 8;
+        val = 8; 
     }
     else if("Mono10" == format_str)
     {
@@ -819,7 +821,7 @@ bool CameraBasler::getPixelFormat(int &val)
     {
         val = 12;
     }
-    if("BayerRG8" == format_str)
+    else if("BayerRG8" == format_str)
     {
         val = 8;
     }
