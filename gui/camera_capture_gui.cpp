@@ -3779,6 +3779,11 @@ void CameraCaptureGui::do_undate_show_slot()
 		if (GENERATE_BRIGHTNESS_DEFAULT_ == firmware_config_param_.generate_brightness_model)
 		{ 
 			renderBrightnessImage(brightness_map_);
+
+			std::vector<cv::Mat> channels;
+
+			cv::split(color_brightness_map_, channels);
+			renderBrightnessImage(channels[2]);
 		}
 		else
 		{
