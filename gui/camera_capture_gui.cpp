@@ -489,6 +489,14 @@ bool CameraCaptureGui::loadSettingData(QString path)
 	setUiData();
 	undateSystemConfigUiData();
 
+
+	if (connected_flag_)
+	{
+		do_pushButton_disconnect();
+
+		do_pushButton_connect();
+	}
+
 	return true;
 }
 
