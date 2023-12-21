@@ -94,7 +94,7 @@ SystemConfigDataStruct::SystemConfigDataStruct()
 	instance_.firwmare_param_.engine = 1;
 
 	instance_.firwmare_param_.use_global_light_filter = 1;
-	instance_.firwmare_param_.global_light_filter_b = 0.25;
+	instance_.firwmare_param_.global_light_filter_b =75;
 	instance_.firwmare_param_.global_light_filter_threshold = 25;
 }
 
