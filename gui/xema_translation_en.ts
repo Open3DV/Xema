@@ -501,6 +501,34 @@
         <source>强度: </source>
         <translation type="unfinished">Intensity: </translation>
     </message>
+    <message>
+        <source>反射滤波</source>
+        <translation type="unfinished">ReflectFilter</translation>
+    </message>
+    <message>
+        <source>系数：</source>
+        <translation type="unfinished">coefficient(%):</translation>
+    </message>
+    <message>
+        <source>阈值：</source>
+        <translation type="unfinished">Threshold:</translation>
+    </message>
+    <message>
+        <source>打开反射滤波！</source>
+        <translation type="unfinished">Turn on ReflectFilter!</translation>
+    </message>
+    <message>
+        <source>系数: </source>
+        <translation type="unfinished">coefficient(%):</translation>
+    </message>
+    <message>
+        <source>关闭反射滤波！</source>
+        <translation type="unfinished">Turn off ReflectFilter!</translation>
+    </message>
+    <message>
+        <source>设置反射滤波失败！</source>
+        <translation type="unfinished">Failed to set ReflectFilter!</translation>
+    </message>
 </context>
 <context>
     <name>OutlierRemovalSettingGuiClass</name>
