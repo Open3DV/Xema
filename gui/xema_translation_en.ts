@@ -519,7 +519,7 @@
     </message>
     <message>
         <source>系数: </source>
-        <translation type="unfinished">coefficient(%):</translation>
+        <translation>coefficient(%):</translation>
     </message>
     <message>
         <source>关闭反射滤波！</source>

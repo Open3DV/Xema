@@ -324,7 +324,7 @@
             <property name="geometry">
              <rect>
               <x>0</x>
-              <y>-230</y>
+              <y>-852</y>
               <width>527</width>
               <height>1731</height>
              </rect>
@@ -1051,6 +1051,11 @@
                  <layout class="QHBoxLayout" name="horizontalLayout_9" stretch="1,1,0,0,1,1">
                   <item>
                    <widget class="QLabel" name="label_reflect_filter_b">
+                    <property name="font">
+                     <font>
+                      <pointsize>12</pointsize>
+                     </font>
+                    </property>
                     <property name="text">
                      <string>系数：</string>
                     </property>
@@ -1074,6 +1079,11 @@
                   </item>
                   <item>
                    <widget class="QLabel" name="label_reflect_filter_threshold">
+                    <property name="font">
+                     <font>
+                      <pointsize>12</pointsize>
+                     </font>
+                    </property>
                     <property name="text">
                      <string>阈值：</string>
                     </property>

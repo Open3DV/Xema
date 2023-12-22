@@ -508,7 +508,7 @@
     </message>
     <message>
         <source>系数：</source>
-        <translation type="unfinished">系数（%）：</translation>
+        <translation type="unfinished">系数(%)：</translation>
     </message>
     <message>
         <source>阈值：</source>
@@ -520,7 +520,7 @@
     </message>
     <message>
         <source>系数: </source>
-        <translation type="unfinished">系数（%）：</translation>
+        <translation type="unfinished">系数(%)：</translation>
     </message>
     <message>
         <source>关闭反射滤波！</source>
