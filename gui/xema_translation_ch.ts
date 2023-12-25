@@ -502,6 +502,34 @@
         <source>强度: </source>
         <translation type="unfinished">强度： </translation>
     </message>
+    <message>
+        <source>反射滤波</source>
+        <translation type="unfinished">反射滤波</translation>
+    </message>
+    <message>
+        <source>系数：</source>
+        <translation type="unfinished">系数(%)：</translation>
+    </message>
+    <message>
+        <source>阈值：</source>
+        <translation type="unfinished">阈值：</translation>
+    </message>
+    <message>
+        <source>打开反射滤波！</source>
+        <translation type="unfinished">打开反射滤波！</translation>
+    </message>
+    <message>
+        <source>系数: </source>
+        <translation type="unfinished">系数(%)：</translation>
+    </message>
+    <message>
+        <source>关闭反射滤波！</source>
+        <translation type="unfinished">关闭反射滤波！</translation>
+    </message>
+    <message>
+        <source>设置反射滤波失败！</source>
+        <translation type="unfinished">设置反射滤波失败！</translation>
+    </message>
 </context>
 <context>
     <name>OutlierRemovalSettingGuiClass</name>

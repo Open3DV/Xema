@@ -356,6 +356,20 @@ extern "C" {
 			//返回值： 类型（int）:返回0表示获取数据成功;返回-1表示采集数据失败.
 			int captureBrightnessData(unsigned char* brightness, XemaColor color)override;
 
+			//函数名： setParamReflectFilter
+			//功能： 设置亮度图增益
+			//输入参数：use(开关：1开、0关)、param_b（过滤系数：范围0-100）
+			//输出参数： 无
+			//返回值： 类型（int）:返回0表示设置参数成功;否则失败。
+			int setParamReflectFilter(int use, float param_b) override;
+
+			//函数名： getParamReflectFilter
+			//功能： 获取亮度图增益
+			//输入参数：无
+			//输出参数：use(开关：1开、0关)、param_b（过滤系数：范围0-100）
+			//返回值： 类型（int）:返回0表示设置参数成功;否则失败。
+			int getParamReflectFilter(int& use, float& param_b) override;
+
 		public:
 
 			int rgbToGray(unsigned char* src, unsigned char* dst);

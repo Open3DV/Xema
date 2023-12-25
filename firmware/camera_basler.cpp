@@ -578,7 +578,16 @@ bool CameraBasler::openCamera()
         // CHECK( res );
         res = PylonDeviceSetFloatFeature(hDev_, "Gain", 0.0);
         // CHECK( res );
-         
+
+        res = PylonDeviceFeatureFromString( hDev_, "BslColorSpace", "Off" );
+
+        res = PylonDeviceFeatureFromString( hDev_, "BslLightSourcePreset", "Off" );
+        res = PylonDeviceFeatureFromString( hDev_, "BalanceRatioSelector", "Red" );
+        res = PylonDeviceSetFloatFeature(hDev_, "BalanceRatio", 1);
+        res = PylonDeviceFeatureFromString( hDev_, "BalanceRatioSelector", "Green" );
+        res = PylonDeviceSetFloatFeature(hDev_, "BalanceRatio", 0.5);
+        res = PylonDeviceFeatureFromString( hDev_, "BalanceRatioSelector", "Blue" );
+        res = PylonDeviceSetFloatFeature(hDev_, "BalanceRatio", 1);
     }
 
         res = PylonDeviceGetIntegerFeature( hDev_, "Width", &image_width_ );
@@ -586,25 +595,21 @@ bool CameraBasler::openCamera()
         res = PylonDeviceGetIntegerFeature( hDev_, "Height", &image_height_ );
         // CHECK( res );
 
-        LOG(INFO)<<"image_width_: "<<image_width_;
-        LOG(INFO)<<"image_height_: "<<image_height_;
-
-     
-
-    /* We will use the Continuous frame acquisition mode, i.e., the camera delivers
-    images continuously. */
-    res = PylonDeviceFeatureFromString( hDev_, "AcquisitionMode", "Continuous" );
-    // CHECK( res );
-
-
-
-    // min_camera_exposure_ = 6250*2;
-
-    camera_opened_state_ = true;
-    
-    trigger_on_flag_ = true;
+        LOG(INFO) << "image_width_: " << image_width_;
+        LOG(INFO) << "image_height_: " << image_height_;
  
-    return true;
+        /* We will use the Continuous frame acquisition mode, i.e., the camera delivers
+        images continuously. */
+        res = PylonDeviceFeatureFromString(hDev_, "AcquisitionMode", "Continuous");
+        // CHECK( res );
+
+        // min_camera_exposure_ = 6250*2;
+
+        camera_opened_state_ = true;
+
+        trigger_on_flag_ = true;
+
+        return true;
 }
 bool CameraBasler::closeCamera()
 {
@@ -786,6 +791,7 @@ bool CameraBasler::getPixelFormat(int &val)
 
     val = 0;
     char buf[256];
+    std::memset(buf,'\0',256);
     size_t siz = sizeof( buf );
 
     GENAPIC_RESULT              res;                      /* Return value of pylon methods. */
@@ -801,16 +807,29 @@ bool CameraBasler::getPixelFormat(int &val)
     LOG(INFO)<<"PixelFormat: "<<buf;
 
     std::string format_str(buf);
+  
 
     if("Mono8" == format_str)
     {
-        val = 8;
+        val = 8; 
     }
     else if("Mono10" == format_str)
     {
         val = 10;
     }
     else if("Mono12" == format_str)
+    {
+        val = 12;
+    }
+    else if("BayerRG8" == format_str)
+    {
+        val = 8;
+    }
+    else if("BayerRG10" == format_str)
+    {
+        val = 10;
+    }
+    else if("BayerRG12" == format_str)
     {
         val = 12;
     }
@@ -840,7 +859,21 @@ bool CameraBasler::setPixelFormat(int val)
         bool isAvail = PylonDeviceFeatureIsAvailable(hDev_, "EnumEntry_PixelFormat_Mono8");
         if (isAvail)
         {
-            errRes = PylonDeviceFeatureFromString(hDev_, "PixelFormat", "Mono8");
+            
+            XemaPixelType type;
+            getPixelType(type);
+
+            if (type == XemaPixelType::Mono)
+            { 
+                errRes = PylonDeviceFeatureFromString(hDev_, "PixelFormat", "Mono8");
+            }
+            else if (type == XemaPixelType::BayerRG8)
+            { 
+                errRes = PylonDeviceFeatureFromString(hDev_, "PixelFormat", "BayerRG8");
+            }
+            
+
+
             if (GENAPI_E_OK != errRes)
             {
                 LOG(INFO) << "Set Gain Failed!";
@@ -861,7 +894,21 @@ bool CameraBasler::setPixelFormat(int val)
         bool isAvail = PylonDeviceFeatureIsAvailable(hDev_, "EnumEntry_PixelFormat_Mono10");
         if (isAvail)
         {
-            errRes = PylonDeviceFeatureFromString(hDev_, "PixelFormat", "Mono10");
+            
+            XemaPixelType type;
+            getPixelType(type);
+
+            if (type == XemaPixelType::Mono)
+            { 
+                errRes = PylonDeviceFeatureFromString(hDev_, "PixelFormat", "Mono10");
+            }
+            else if (type == XemaPixelType::BayerRG8)
+            { 
+                errRes = PylonDeviceFeatureFromString(hDev_, "PixelFormat", "BayerRG10");
+            }
+
+
+
             if (GENAPI_E_OK != errRes)
             {
                 LOG(INFO) << "Set Gain Failed!";
@@ -882,7 +929,20 @@ bool CameraBasler::setPixelFormat(int val)
         bool isAvail = PylonDeviceFeatureIsAvailable(hDev_, "EnumEntry_PixelFormat_Mono12");
         if (isAvail)
         {
-            errRes = PylonDeviceFeatureFromString(hDev_, "PixelFormat", "Mono12");
+            
+            XemaPixelType type;
+            getPixelType(type);
+
+            if (type == XemaPixelType::Mono)
+            { 
+                errRes = PylonDeviceFeatureFromString(hDev_, "PixelFormat", "Mono12");
+            }
+            else if (type == XemaPixelType::BayerRG8)
+            { 
+                errRes = PylonDeviceFeatureFromString(hDev_, "PixelFormat", "BayerRG12");
+            }
+
+
             if (GENAPI_E_OK != errRes)
             {
                 LOG(INFO) << "Set Gain Failed!";

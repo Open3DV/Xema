@@ -1388,7 +1388,7 @@ int handle_cmd_get_raw_08(int client_sock)
         return DF_FAILED;	
     } 
 
-    int image_num= 26;
+    int image_num= 24;
 
     int width = 0;
     int height = 0;
@@ -1580,6 +1580,137 @@ int handle_cmd_get_frame_06_repetition_black(int client_sock)
     }
 
     ret = scan3d_.captureFrame06RepetitionMono12(repetition_count);
+    if (DF_SUCCESS != ret)
+    {
+    //   LOG(ERROR) << "captureFrame04BaseConfidence code: " << ret;
+    //   frame_status_ = ret;
+      
+        handle_error(ret);
+    }
+ 
+    scan3d_.removeOutlierBaseDepthFilter();
+    scan3d_.removeOutlierBaseRadiusFilter();
+
+        
+    if(1!=generate_brightness_model)
+    {
+        scan3d_.captureTextureImage(generate_brightness_model,generate_brightness_exposure_time,brightness);
+    }
+    else
+    { 
+         scan3d_.copyBrightnessData(brightness);
+    }
+
+    // scan3d_.copyBrightnessData(brightness);
+    scan3d_.copyDepthData(depth_map); 
+ 
+    LOG(INFO)<<"capture Frame04 Repetition02 Finished!";
+
+    if(1 == system_config_settings_machine_.Instance().firwmare_param_.use_bilateral_filter)
+    { 
+        cv::Mat depth_mat(camera_height_, camera_width_, CV_32FC1, depth_map);
+        cv::Mat depth_bilateral_mat(camera_height_, camera_width_, CV_32FC1, cv::Scalar(0));
+        cv::bilateralFilter(depth_mat, depth_bilateral_mat, system_config_settings_machine_.Instance().firwmare_param_.bilateral_filter_param_d, 2.0, 10.0); 
+        memcpy(depth_map,(float*)depth_bilateral_mat.data,depth_buf_size);
+        LOG(INFO) << "Bilateral";
+
+
+    }
+
+
+   /***************************************************************************************************/
+    LOG(INFO) << "start send depth, buffer_size= "<< depth_buf_size;
+    ret = send_buffer(client_sock, (const char *)depth_map, depth_buf_size);
+    LOG(INFO) << "depth ret= "<<ret;
+
+    if (ret == DF_FAILED)
+    {
+        LOG(INFO) << "send error, close this connection!";
+        // delete [] buffer;
+        delete[] depth_map;
+        delete[] brightness;
+
+        frame_status_ = DF_ERROR_NETWORK;
+        return DF_FAILED;
+    }
+
+    LOG(INFO) << "start send brightness, buffer_size= "<<brightness_buf_size;
+    ret = send_buffer(client_sock, (const char *)brightness, brightness_buf_size);
+    LOG(INFO) << "brightness ret= "<<ret;
+
+    LOG(INFO) << "Send Frame06 repetition";
+
+    float temperature = lc3010.get_projector_temperature();
+
+    LOG(INFO) << "temperature: " << temperature << " deg";
+
+    if (ret == DF_FAILED)
+    {
+        LOG(INFO) <<"send error, close this connection!";
+        // delete [] buffer;
+        delete[] depth_map;
+        delete[] brightness;
+
+        frame_status_ = DF_ERROR_NETWORK;
+        return DF_FAILED;
+    }
+    LOG(INFO) << "frame sent!";
+    // delete [] buffer;
+    delete[] depth_map;
+    delete[] brightness;
+
+    if (DF_FRAME_CAPTURING == frame_status_)
+    {
+        frame_status_ = DF_SUCCESS;
+    }
+    return DF_SUCCESS;
+
+    
+
+}
+
+
+int handle_cmd_get_frame_06_repetition_color_black(int client_sock)
+{
+    /**************************************************************************************/
+
+    if(check_token(client_sock) == DF_FAILED)
+    {
+	    return DF_FAILED;
+    }
+	
+    frame_status_ = DF_FRAME_CAPTURING;
+    
+    int repetition_count = 1;
+
+    int ret = recv_buffer(client_sock, (char*)(&repetition_count), sizeof(int));
+    if(ret == DF_FAILED)
+    {
+        LOG(INFO)<<"send error, close this connection!\n";
+        frame_status_ = DF_ERROR_NETWORK;
+    	return DF_FAILED;
+    }
+    LOG(INFO)<<"repetition_count: "<<repetition_count<<"\n";
+    /***************************************************************************************/
+
+
+    int depth_buf_size = camera_width_*camera_height_*4;
+    float* depth_map = new float[depth_buf_size];
+
+    int brightness_buf_size = camera_width_*camera_height_*1;
+    unsigned char* brightness = new unsigned char[brightness_buf_size]; 
+
+    if(repetition_count< 1)
+    {
+      repetition_count = 1;
+    }
+    
+    if(repetition_count> 10)
+    {
+      repetition_count = 10;
+    }
+
+    ret = scan3d_.captureFrame06RepetitionColorMono12(repetition_count);
     if (DF_SUCCESS != ret)
     {
     //   LOG(ERROR) << "captureFrame04BaseConfidence code: " << ret;
@@ -4176,6 +4307,58 @@ int handle_cmd_set_param_generate_brightness(int client_sock)
   
     return DF_SUCCESS;
 }
+ 
+ //设置全局光滤波参数
+int handle_cmd_set_param_global_light_filter(int client_sock)
+{
+   if(check_token(client_sock) == DF_FAILED)
+    {
+	    return DF_FAILED;
+    }
+
+
+    int switch_val = 0;
+ 
+
+    int ret = recv_buffer(client_sock, (char*)(&switch_val), sizeof(int));
+    if(ret == DF_FAILED)
+    {
+        LOG(INFO)<<"send error, close this connection!\n";
+    	return DF_FAILED;
+    }
+
+
+    float b = 0;
+    ret = recv_buffer(client_sock, (char*)(&b), sizeof(float));
+    if(ret == DF_FAILED)
+    {
+        LOG(INFO)<<"send error, close this connection!\n";
+    	return DF_FAILED;
+    }
+
+
+    // int threshold = 0;
+    // ret = recv_buffer(client_sock, (char*)(&threshold), sizeof(int));
+    // if(ret == DF_FAILED)
+    // {
+    //     LOG(INFO)<<"send error, close this connection!\n";
+    // 	return DF_FAILED;
+    // }
+ 
+    b = (100. -b)/100.0;
+
+    system_config_settings_machine_.Instance().firwmare_param_.use_global_light_filter = switch_val; 
+    system_config_settings_machine_.Instance().firwmare_param_.global_light_filter_b = b; 
+    system_config_settings_machine_.Instance().firwmare_param_.global_light_filter_threshold = 0; 
+
+ 
+    LOG(INFO)<<"use_global_light_filter: "<<system_config_settings_machine_.Instance().firwmare_param_.use_global_light_filter; 
+    LOG(INFO)<<"global_light_filter_b: "<<system_config_settings_machine_.Instance().firwmare_param_.global_light_filter_b; 
+    LOG(INFO)<<"global_light_filter_threshold: "<<system_config_settings_machine_.Instance().firwmare_param_.global_light_filter_threshold; 
+         
+
+    return DF_SUCCESS;
+}
 
 
 //设置反射光滤波参数
@@ -4205,6 +4388,44 @@ int handle_cmd_set_param_reflect_filter(int client_sock)
     LOG(INFO)<<"use_reflect_filter: "<<system_config_settings_machine_.Instance().firwmare_param_.use_reflect_filter; 
          
 
+    return DF_SUCCESS;
+}
+
+int handle_cmd_get_param_global_light_filter(int client_sock)
+{
+   if(check_token(client_sock) == DF_FAILED)
+    {
+	    return DF_FAILED;
+    }
+     
+    int ret = send_buffer(client_sock, (char*)(&system_config_settings_machine_.Instance().firwmare_param_.use_global_light_filter), sizeof(int) );
+    if(ret == DF_FAILED)
+    {
+        LOG(INFO)<<"send error, close this connection!\n";
+	    return DF_FAILED;
+    }
+
+    float b = 100 - 100* system_config_settings_machine_.Instance().firwmare_param_.global_light_filter_b;
+
+    ret = send_buffer(client_sock, (char*)(&b), sizeof(float) );
+    if(ret == DF_FAILED)
+    {
+        LOG(INFO)<<"send error, close this connection!\n";
+	    return DF_FAILED;
+    }
+
+    // ret = send_buffer(client_sock, (char*)(&system_config_settings_machine_.Instance().firwmare_param_.global_light_filter_threshold), sizeof(int) );
+    // if(ret == DF_FAILED)
+    // {
+    //     LOG(INFO)<<"send error, close this connection!\n";
+	//     return DF_FAILED;
+    // }
+ 
+  
+    LOG(INFO)<<"use_global_light_filter: "<<system_config_settings_machine_.Instance().firwmare_param_.use_global_light_filter; 
+    LOG(INFO)<<"global_light_filter_b: "<<system_config_settings_machine_.Instance().firwmare_param_.global_light_filter_b; 
+    LOG(INFO)<<"global_light_filter_threshold: "<<system_config_settings_machine_.Instance().firwmare_param_.global_light_filter_threshold; 
+          
     return DF_SUCCESS;
 }
 
@@ -6149,7 +6370,7 @@ int handle_commands(int client_sock)
             }
             else if (type == XemaPixelType::BayerRG8)
             {
-                ret = handle_cmd_get_frame_06_repetition_color(client_sock);
+                ret = handle_cmd_get_frame_06_repetition_color_black(client_sock);
             }
     }
 
@@ -6479,6 +6700,14 @@ int handle_commands(int client_sock)
     case DF_CMD_SET_PARAM_CAPTURE_ENGINE:
         LOG(INFO)<<"DF_CMD_SET_PARAM_CAPTURE_ENGINE"; 
         ret = handle_cmd_set_param_capture_engine(client_sock);
+        break;
+    case DF_CMD_SET_PARAM_GLOBAL_LIGHT_FILTER:
+        LOG(INFO)<<"DF_CMD_SET_PARAM_GLOBAL_LIGHT_FILTER"; 
+        ret = handle_cmd_set_param_global_light_filter(client_sock);
+        break;
+    case DF_CMD_GET_PARAM_GLOBAL_LIGHT_FILTER:
+        LOG(INFO)<<"DF_CMD_GET_PARAM_GLOBAL_LIGHT_FILTER"; 
+        ret = handle_cmd_get_param_global_light_filter(client_sock);
         break;
 	default:
 	    LOG(INFO)<<"DF_CMD_UNKNOWN";

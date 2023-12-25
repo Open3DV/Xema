@@ -177,9 +177,11 @@ int Scan3D::reopenCamera()
 
 int Scan3D::initCache()
 {
-    std::memset(buff_brightness_,0,sizeof(char)*image_width_*image_height_);
-    std::memset(buff_depth_,0,sizeof(float)*image_width_*image_height_);
-    std::memset(buff_pointcloud_,0,sizeof(float)*image_width_*image_height_*3); 
+    std::memset(buff_brightness_, 0, sizeof(char) * image_width_ * image_height_);
+    std::memset(buff_depth_, 0, sizeof(float) * image_width_ * image_height_);
+    std::memset(buff_pointcloud_, 0, sizeof(float) * image_width_ * image_height_ * 3);
+
+
 }
 
 bool Scan3D::cameraIsValid()
@@ -1189,7 +1191,7 @@ int Scan3D::captureRaw08(unsigned char *buff)
 
     unsigned char *img_ptr= new unsigned char[image_width_*image_height_];
 
-    for (int i = 0; i < 26; i++)
+    for (int i = 0; i < 24; i++)
     {
         LOG(INFO)<<"grap "<<i<<" image:";
         if (!camera_->grap(img_ptr))
@@ -1207,7 +1209,7 @@ int Scan3D::captureRaw08(unsigned char *buff)
     if (1 != generate_brightness_model_)
     {
         captureTextureImage(generate_brightness_model_, generate_brightness_exposure_, img_ptr);
-        memcpy(buff + img_size * 18, img_ptr, img_size);
+        memcpy(buff + img_size * 0, img_ptr, img_size);
     }
 
     delete[] img_ptr;
@@ -1699,7 +1701,10 @@ int Scan3D::captureFrame06Repetition(int repetition_count)
     delete[] img_ptr;
 
     cuda_handle_repetition_model06(repetition_count); 
- 
+    if (fisher_confidence_val_ > -50)
+    {
+        phase_monotonicity_filter(fisher_confidence_val_ / 2 + 25);
+    }
     cuda_normalize_phase(0); 
     LOG(INFO) << "parallel_cuda_unwrap_phase";
     cuda_generate_pointcloud_base_table();
@@ -1720,6 +1725,272 @@ int Scan3D::captureFrame06Repetition(int repetition_count)
     //     captureTextureImage(generate_brightness_model_, generate_brightness_exposure_,buff_brightness_);
     // }
 
+    return frame_status;
+}
+
+
+
+	int  Scan3D::bayerToRgb(unsigned short* src, unsigned short* dst)
+	{
+
+		int height = image_height_;
+		int width = image_width_;
+
+		//按3×3的邻域处理，边缘需填充至少1个像素的宽度
+		int nBorder = 1;
+		unsigned short* bayer = (unsigned short*)malloc(sizeof(unsigned short) * (width + 2 * nBorder) * (height + 2 * nBorder));
+		memset(bayer, 0, sizeof(unsigned short) * (width + 2 * nBorder) * (height + 2 * nBorder));
+
+		for (int r = 0; r < height; r++)
+		{
+			for (int c = 0; c < width; c++)
+			{
+				bayer[(r + nBorder) * (width + 2 * nBorder) + (c + nBorder)] = src[r * width + c];
+			}
+		}
+
+		for (int b = 0; b < nBorder; b++)
+		{
+			for (int r = 0; r < height; r++)
+			{
+				bayer[(r + nBorder) * (width + 2 * nBorder) + b] = src[r * width];
+				bayer[(r + nBorder) * (width + 2 * nBorder) + b + 2 * nBorder + width - 1] = src[r * width + width - 1];
+			}
+		}
+
+		for (int b = 0; b < nBorder; b++)
+		{
+			for (int c = 0; c < width + 2 * nBorder; c++)
+			{
+				bayer[b * (width + 2 * nBorder) + c] = bayer[nBorder * (width + 2 * nBorder) + c];
+				bayer[(nBorder + height + b) * (width + 2 * nBorder) + c] = bayer[(nBorder + height - 1) * (width + 2 * nBorder) + c];
+			}
+		}
+
+		unsigned short* p_rgb = (unsigned short*)malloc(sizeof(unsigned short) * 3 * (width + 2 * nBorder) * (height + 2 * nBorder));
+		memset(p_rgb, 0, sizeof(unsigned short) * 3 * (width + 2 * nBorder) * (height + 2 * nBorder));
+
+
+		unsigned short* pBayer = bayer;
+		unsigned short* pRGB = p_rgb;
+		int nW = width + 2 * nBorder;
+		int nH = height + 2 * nBorder;
+
+
+		for (int i = nBorder; i < nH - nBorder; i++)
+		{
+			for (int j = nBorder; j < nW - nBorder; j++)
+			{
+				//3×3邻域像素定义
+				/*
+				 * |M00 M01 M02|
+				 * |M10 M11 M12|
+				 * |M20 M21 M22|
+				*/
+				int nM00 = (i - 1) * nW + (j - 1); int nM01 = (i - 1) * nW + (j + 0);  int nM02 = (i - 1) * nW + (j + 1);
+				int nM10 = (i - 0) * nW + (j - 1); int nM11 = (i - 0) * nW + (j + 0);  int nM12 = (i - 0) * nW + (j + 1);
+				int nM20 = (i + 1) * nW + (j - 1); int nM21 = (i + 1) * nW + (j + 0);  int nM22 = (i + 1) * nW + (j + 1);
+
+				if (i % 2 == 0)
+				{
+					if (j % 2 == 0)     //偶数行偶数列
+					{
+						pRGB[i * nW * 3 + j * 3 + 0] = pBayer[nM11];//b
+						pRGB[i * nW * 3 + j * 3 + 2] = ((pBayer[nM00] + pBayer[nM02] + pBayer[nM20] + pBayer[nM22]) >> 2);//r
+						pRGB[i * nW * 3 + j * 3 + 1] = ((pBayer[nM01] + pBayer[nM10] + pBayer[nM12] + pBayer[nM21]) >> 2);//g
+					}
+					else             //偶数行奇数列
+					{
+						pRGB[i * nW * 3 + j * 3 + 1] = pBayer[nM11];//g
+						pRGB[i * nW * 3 + j * 3 + 2] = (pBayer[nM01] + pBayer[nM21]) >> 1;//r
+						pRGB[i * nW * 3 + j * 3 + 0] = (pBayer[nM10] + pBayer[nM12]) >> 1;//b
+					}
+				}
+				else
+				{
+					if (j % 2 == 0)     //奇数行偶数列
+					{
+						pRGB[i * nW * 3 + j * 3 + 1] = pBayer[nM11];//g
+						pRGB[i * nW * 3 + j * 3 + 2] = (pBayer[nM10] + pBayer[nM12]) >> 1;//r
+						pRGB[i * nW * 3 + j * 3 + 0] = (pBayer[nM01] + pBayer[nM21]) >> 1;//b
+					}
+					else             //奇数行奇数列
+					{
+						pRGB[i * nW * 3 + j * 3 + 2] = pBayer[nM11];//r
+						pRGB[i * nW * 3 + j * 3 + 1] = (pBayer[nM01] + pBayer[nM21] + pBayer[nM10] + pBayer[nM12]) >> 2;//g
+						pRGB[i * nW * 3 + j * 3 + 0] = (pBayer[nM00] + pBayer[nM02] + pBayer[nM20] + pBayer[nM22]) >> 2;//b
+					}
+				}
+			}
+		}
+
+
+		for (int r = 0; r < height; r++)
+		{
+			for (int c = 0; c < width; c++)
+			{
+				dst[3 * (r * width + c) + 0] = pRGB[3 * ((r + nBorder) * (width + 2 * nBorder) + c + nBorder) + 0];
+				dst[3 * (r * width + c) + 1] = pRGB[3 * ((r + nBorder) * (width + 2 * nBorder) + c + nBorder) + 1];
+				dst[3 * (r * width + c) + 2] = pRGB[3 * ((r + nBorder) * (width + 2 * nBorder) + c + nBorder) + 2];
+			}
+		}
+
+
+		free(bayer);
+		free(p_rgb);
+
+		return 0;
+	}
+
+
+int Scan3D::captureFrame06RepetitionColorMono12(int repetition_count)
+{
+
+    LOG(INFO) << "cuda_clear_reconstruct_cache:";
+    cuda_clear_reconstruct_cache();
+    initCache();
+
+    int frame_status = DF_SUCCESS;
+    cuda_clear_repetition_02_patterns();
+
+    if (patterns_sets_num_ < 9)
+    {
+        return DF_ERROR_LOST_PATTERN_SETS;
+    }
+
+    int bits = 0;
+    if(DF_SUCCESS == getPixelFormat(bits))
+    {
+        if(12 != bits)
+        {
+            if(setPixelFormat(12))
+            {
+                LOG(INFO)<<"set camera pixel format error!";
+                return DF_FAILED;
+            }
+        }
+    }
+    // setPixelFormat(12);
+
+    if (!camera_->streamOn())
+    {
+        LOG(INFO) << "Stream On Error";
+        frame_status = DF_ERROR_CAMERA_STREAM;
+        return DF_ERROR_CAMERA_STREAM;
+    }
+
+    // unsigned short *img_ptr = new unsigned short[image_width_ * image_height_];
+
+    cv::Mat img(image_height_,image_width_,CV_16U,cv::Scalar(0));
+    cv::Mat color_img(image_height_,image_width_,CV_16UC3,cv::Scalar(0,0,0)); 
+
+    for (int r = 0; r < repetition_count; r++)
+    {
+        int n = 0;
+
+        LOG(INFO) << "pattern_mode06";
+        int ret = lc3010_.pattern_mode06();
+        if (DF_SUCCESS != ret)
+        {
+            frame_status = ret;
+            camera_->streamOff();
+            return ret;
+        }
+
+        lc3010_.start_pattern_sequence();
+        LOG(INFO) << "start_pattern_sequence";
+
+        for (int g_i = 0; g_i < 16; g_i++)
+        {
+            LOG(INFO) << "receiving " << g_i << "th image";
+            bool status = camera_->grap((ushort*)img.data);
+            LOG(INFO) << "status=" << status;
+
+            if (status)
+            {
+
+                cv::cvtColor(img, color_img, cv::COLOR_BayerBG2BGR);
+
+                // bayerToRgb((unsigned short*) img.data, (unsigned short*)  color_img.data);
+
+                std::vector<cv::Mat> channels;
+                cv::split(color_img, channels); 
+
+                if(0 == g_i)
+                {
+                    // cv::Mat blue_img = channels[0].clone();
+                    // cv::Mat g_img = channels[1].clone();
+                    // cv::Mat r_img = channels[2].clone();
+
+                    // blue_img /= 16;
+                    // blue_img.convertTo(blue_img, CV_8U);
+
+                    
+                    // g_img /= 16;
+                    // g_img.convertTo(g_img, CV_8U);
+
+
+                    
+                    // r_img /= 16;
+                    // r_img.convertTo(r_img, CV_8U);
+
+                    // cv::Mat color = color_img.clone();
+
+                    // color /= 16;
+                    // color.convertTo(blue_img, CV_8UC3);
+
+                    // cv::imwrite("blue.bmp", blue_img);
+                    // cv::imwrite("g_img.bmp", g_img);
+                    // cv::imwrite("r_img.bmp", r_img);
+                    // cv::imwrite("color.bmp", color);
+                }
+
+
+
+                cuda_merge_repetition_02_patterns_16((ushort*)channels[0].data, g_i);
+            }
+            else
+            {
+                LOG(INFO) << "grad failed!";
+                camera_->streamOff(); 
+
+                if (g_i == 0)
+                {
+                        return DF_ERROR_LOST_TRIGGER;
+                }
+
+                frame_status = DF_ERROR_CAMERA_GRAP;
+                return DF_ERROR_CAMERA_GRAP;
+            }
+        }
+
+        /*********************************************************************************************/
+
+        /***********************************************************************************************/
+    }
+
+    camera_->streamOff();
+    lc3010_.stop_pattern_sequence();
+    LOG(INFO) << "GXStreamOff";
+ 
+
+    // setPixelFormat(8);
+
+    cuda_handle_repetition_model06_16(repetition_count);
+
+    cuda_normalize_phase(0);
+    LOG(INFO) << "parallel_cuda_unwrap_phase";
+    cuda_generate_pointcloud_base_table(); 
+    LOG(INFO) << "generate_pointcloud_base_table";
+
+    cuda_copy_depth_from_memory(buff_depth_);
+    cuda_copy_pointcloud_from_memory(buff_pointcloud_);
+
+    if (1 == generate_brightness_model_)
+    {
+        cuda_copy_brightness_from_memory(buff_brightness_);
+    }
+ 
     return frame_status;
 }
 
@@ -1804,7 +2075,11 @@ int Scan3D::captureFrame06RepetitionColor(int repetition_count)
             else
             {
                 LOG(INFO) << "grad failed!";
-                camera_->streamOff(); 
+                camera_->streamOff();
+                if (g_i == 0)
+                {
+                    return DF_ERROR_LOST_TRIGGER;
+                } 
 
                 frame_status = DF_ERROR_CAMERA_GRAP;
                 return DF_ERROR_CAMERA_GRAP;
@@ -1822,7 +2097,10 @@ int Scan3D::captureFrame06RepetitionColor(int repetition_count)
  
 
     cuda_handle_repetition_model06(repetition_count); 
- 
+    if (fisher_confidence_val_ > -50)
+    {
+        phase_monotonicity_filter(fisher_confidence_val_ / 2 + 25);
+    }
     cuda_normalize_phase(0); 
     LOG(INFO) << "parallel_cuda_unwrap_phase";
     cuda_generate_pointcloud_base_table();
@@ -1936,6 +2214,11 @@ int Scan3D::captureFrame06HdrColor()
             {
 
                 camera_->streamOff();
+                if (g_i == 0)
+                {
+                    return DF_ERROR_LOST_TRIGGER;
+                }
+
                 return DF_ERROR_CAMERA_GRAP;
             }
             LOG(INFO) << "finished!";
@@ -1959,6 +2242,10 @@ int Scan3D::captureFrame06HdrColor()
 
             if (15 == g_i)
             {
+                if (fisher_confidence_val_ > -50)
+                {
+                    phase_monotonicity_filter(fisher_confidence_val_ / 2 + 25);
+                }
                 cuda_normalize_phase(0);
                 cuda_generate_pointcloud_base_table();
                 LOG(INFO) << "cuda_generate_pointcloud_base_table";
@@ -2111,6 +2398,10 @@ int Scan3D::captureFrame06Hdr()
 
             if (15 == g_i)
             {
+                if (fisher_confidence_val_ > -50)
+                {
+                    phase_monotonicity_filter(fisher_confidence_val_ / 2 + 25);
+                }
                 cuda_normalize_phase(0);
                 cuda_generate_pointcloud_base_table();
                 LOG(INFO) << "cuda_generate_pointcloud_base_table";
@@ -2247,7 +2538,10 @@ int Scan3D::captureFrame06RepetitionMono12(int repetition_count)
     // setPixelFormat(8);
 
     cuda_handle_repetition_model06_16(repetition_count);
-
+    if (fisher_confidence_val_ > -50)
+    {
+        phase_monotonicity_filter(fisher_confidence_val_ / 2 + 25);
+    }
     cuda_normalize_phase(0);
     LOG(INFO) << "parallel_cuda_unwrap_phase";
     cuda_generate_pointcloud_base_table(); 
@@ -2373,6 +2667,10 @@ int Scan3D::captureFrame06HdrMono12()
 
             if (15 == g_i)
             {
+                if (fisher_confidence_val_ > -50)
+                {
+                    phase_monotonicity_filter(fisher_confidence_val_ / 2 + 25);
+                }
                 cuda_normalize_phase(0);
                 cuda_generate_pointcloud_base_table();
                 LOG(INFO) << "cuda_generate_pointcloud_base_table";
@@ -2430,7 +2728,7 @@ int Scan3D::captureFrame06Mono12()
     int bits = 0;
 
     if(DF_SUCCESS == getPixelFormat(bits))
-    {
+    { 
         if(12 != bits)
         {
             if(setPixelFormat(12))
@@ -2439,8 +2737,14 @@ int Scan3D::captureFrame06Mono12()
                 return DF_FAILED;
             }
         }
+
+    }
+    else
+    { 
+        LOG(ERROR)<<"Pixel Bits: "<<bits;
     }
     // setPixelFormat(12);
+
 
     if (!camera_->streamOn())
     {
@@ -2481,6 +2785,10 @@ int Scan3D::captureFrame06Mono12()
 
             if (15 == g_i)
             {
+                if (fisher_confidence_val_ > -50)
+                {
+                    phase_monotonicity_filter(fisher_confidence_val_ / 2 + 25);
+                }
                 cuda_normalize_phase(0);
                 cuda_generate_pointcloud_base_table();
                 LOG(INFO) << "cuda_generate_pointcloud_base_table";
@@ -2604,6 +2912,10 @@ int Scan3D::captureFrame06()
   
         if(15 == i)
         { 
+            if (fisher_confidence_val_ > -50)
+            {
+                phase_monotonicity_filter(fisher_confidence_val_ / 2 + 25);
+            }
             cuda_normalize_phase(0); 
             cuda_generate_pointcloud_base_table();
             LOG(INFO) << "cuda_generate_pointcloud_base_table"; 
@@ -2693,6 +3005,10 @@ int Scan3D::captureFrame06Color()
         if (!camera_->grap(img.data))
         { 
             camera_->streamOff();
+            if (i == 0)
+            {
+                return DF_ERROR_LOST_TRIGGER;
+            }
             return DF_ERROR_CAMERA_GRAP;
         }
         LOG(INFO)<<"finished!";
@@ -2717,6 +3033,10 @@ int Scan3D::captureFrame06Color()
   
         if(15 == i)
         { 
+            if (fisher_confidence_val_ > -50)
+            {
+                phase_monotonicity_filter(fisher_confidence_val_ / 2 + 25);
+            }
             cuda_normalize_phase(0); 
             cuda_generate_pointcloud_base_table();
             LOG(INFO) << "cuda_generate_pointcloud_base_table"; 
@@ -3655,9 +3975,11 @@ int Scan3D::getPixelFormat(int &bit)
 
     bool ok = camera_->getPixelFormat(val);
 
+
     if(!ok)
     {
-        bit = 8;
+        // bit = 8;
+        LOG(ERROR)<<"getPixelFormat";
         return DF_FAILED;
     }
 

@@ -63,6 +63,9 @@ __device__ float* d_point_cloud_map_;
 __device__ float* d_depth_map_; 
 __device__ float* d_depth_map_temp_; 
 __device__ float* d_triangulation_error_map_;
+__device__ unsigned char* d_global_light_map_;
+__device__ unsigned char* d_direct_light_map_;
+__device__ unsigned char* d_uncertain_map_;
  
 __device__ int load_calib_data_flag_ = 0;
 //calib data
@@ -165,6 +168,8 @@ bool cuda_rectify_six_step_pattern_phase(int mode, int kernal_diameter);
 bool cuda_normalize_phase(int serial_flag);
 
 void fisher_filter(float fisher_confidence_val);
+
+void phase_monotonicity_filter(float monotonicity_val);
 
 void depth_filter(float depth_threshold_val);
 

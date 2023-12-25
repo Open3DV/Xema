@@ -228,6 +228,10 @@ int LightCrafter3010::SetLedCurrent(unsigned short R, unsigned short G, unsigned
     if (R>1023) R=1023;
     if (G>1023) G=1023;
     if (B>1023) B=1023;
+
+    if (R< 91)  R=91;
+    if (G< 91)  G=91;
+    if (B< 91)  B=91;
     
     char buffer[6];
     memset(buffer,0,6*sizeof(char));
@@ -499,6 +503,146 @@ void LightCrafter3010::reload_pattern_order_table_from_flash()
     memset(TxBuffer, 0, sizeof(TxBuffer));
     TxBuffer[0] = 0x02;
     write(Write_Pattern_Order_Table_Entry, TxBuffer, 24);
+}
+
+int LightCrafter3010::write_pattern_table(unsigned char* pattern_index, unsigned char* pattern_nums,unsigned char* pattern_invert, int len,float camera_exposure)
+{
+     unsigned char buffer[24];
+    memset(buffer,0,24*sizeof(char));
+
+    int ret = 0;
+    unsigned char ver_buffer[25];
+    memset(ver_buffer,0,25*sizeof(char));
+
+    buffer[0] = 0x01; // Start
+    buffer[1] = 0x00; // Pattern Set Index
+
+    buffer[2] = 0x06; // Number of pattern to display
+    // buffer[3] = 0x07;  //RGB
+    buffer[3] = 0x04; // BLUE
+
+    // Pattern Invert
+    buffer[4] = 0;
+    buffer[5] = 0;
+    buffer[6] = 0;
+    buffer[7] = 0;
+    buffer[8] = 0;
+    buffer[9] = 0;
+    buffer[10] = 0;
+    buffer[11] = 0;
+
+    int pre_illumination_dark_time = 8500;
+    int pose_illumination_dark_time = 1500;
+
+    int exposure_rate = camera_exposure_ / 2000;
+
+    pre_illumination_dark_time = 1000 + 170 * (exposure_rate); //根据经验的值
+    // pose_illumination_dark_time = 500+ 30*(exposure_rate);
+    // pose_illumination_dark_time = 1000+ 30*(exposure_rate);
+
+    // Illumination Time = 11000us
+    int illumination_time = camera_exposure - 1000;
+
+    if (camera_exposure < camera_min_exposure_)
+    {
+        pre_illumination_dark_time = camera_min_exposure_ - camera_exposure + 1000;
+        illumination_time = camera_exposure;
+
+        if(pre_illumination_dark_time > 12000)
+        {
+            pre_illumination_dark_time= 12000;  
+            //此行代码涉及到两个issue：
+            //1. https://gitee.com/open3dv/xema/issues/I66IGV
+            //2. https://gitee.com/open3dv/xema/issues/I7JVG0
+        }
+    }
+
+    LOG(INFO) << "pre_illumination_dark_time: " << pre_illumination_dark_time;
+    LOG(INFO) << "illumination_time: " << illumination_time;
+    LOG(INFO) << "pose_illumination_dark_time: " << pose_illumination_dark_time;
+
+    std::vector<unsigned char> remainder_list;
+    for (int i = 0; i < 4; i++)
+    {
+        int remainder = illumination_time % 256;
+        remainder_list.push_back(remainder);
+        illumination_time /= 256;
+    }
+
+    buffer[12] = remainder_list[0];
+    buffer[13] = remainder_list[1];
+    buffer[14] = remainder_list[2];
+    buffer[15] = remainder_list[3];
+
+    std::vector<unsigned char> dark_remainder_list;
+    for (int i = 0; i < 4; i++)
+    {
+        int remainder = pre_illumination_dark_time % 256;
+        dark_remainder_list.push_back(remainder);
+        pre_illumination_dark_time /= 256;
+    }
+
+    // Pre-illumination Dark Time = 500us
+
+    buffer[16] = dark_remainder_list[0];
+    buffer[17] = dark_remainder_list[1];
+    buffer[18] = dark_remainder_list[2];
+    buffer[19] = dark_remainder_list[3];
+
+    std::vector<unsigned char> pose_dark_remainder_list;
+    for (int i = 0; i < 4; i++)
+    {
+        int remainder = pose_illumination_dark_time % 256;
+        pose_dark_remainder_list.push_back(remainder);
+        pose_illumination_dark_time /= 256;
+    }
+    buffer[20] = pose_dark_remainder_list[0];
+    buffer[21] = pose_dark_remainder_list[1];
+    buffer[22] = pose_dark_remainder_list[2];
+    buffer[23] = pose_dark_remainder_list[3];
+
+
+
+    for (int i = 0; i < len; i++)
+    {
+        buffer[1] = pattern_index[i];
+	    buffer[2] = pattern_nums[i];
+       
+
+        // Pattern Invert
+        buffer[4] =  pattern_invert[i];
+        buffer[5] =  pattern_invert[i];
+        buffer[6] =  pattern_invert[i];
+        buffer[7] =  pattern_invert[i];
+        buffer[8] =  pattern_invert[i];
+        buffer[9] =  pattern_invert[i];
+        buffer[10] =  pattern_invert[i];
+        buffer[11] =  pattern_invert[i];
+
+        write(Write_Pattern_Order, buffer, 24);
+
+        // usleep(100);
+        ver_buffer[0] = pattern_index[i];
+        read(Read_Pattern_Order, ver_buffer, 25);
+
+        ret = memcmp(buffer, ver_buffer+1, 24 * sizeof(char)); 
+        if (0 != ret)
+        {
+            for(int i = 0;i< 24;i++)
+            {
+                LOG(INFO)<<(int)buffer[i] <<" , "<<(int)ver_buffer[i];
+            }
+            return DF_ERROR_LIGHTCRAFTER_SET_PATTERN_ORDER;
+        }
+
+        buffer[0] = 0x00;
+    }
+
+
+
+
+
+    return DF_SUCCESS;
 }
 
 
@@ -787,9 +931,10 @@ int LightCrafter3010::pattern_mode06()
 
 int LightCrafter3010::pattern_mode08() 
 {
-    unsigned char pattern_index[] = {2,8,9};
-    unsigned char pattern_nums[] = {6,18,2};
-    return write_pattern_table(pattern_index, pattern_nums, 3, camera_exposure_);
+    unsigned char pattern_index[] = {8,2,7,7};
+    unsigned char pattern_nums[] = {2,6,8,8};
+    unsigned char pattern_invert[] = {0,0,0,0xFF};
+    return write_pattern_table(pattern_index, pattern_nums, pattern_invert,4, camera_exposure_);
 }
 
 void LightCrafter3010::read_pattern_status()
