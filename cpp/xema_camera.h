@@ -357,14 +357,14 @@ extern "C" {
 			int captureBrightnessData(unsigned char* brightness, XemaColor color)override;
 
 			//函数名： setParamReflectFilter
-			//功能： 设置亮度图增益
+			//功能： 设置反射滤波参数
 			//输入参数：use(开关：1开、0关)、param_b（过滤系数：范围0-100）
 			//输出参数： 无
 			//返回值： 类型（int）:返回0表示设置参数成功;否则失败。
 			int setParamReflectFilter(int use, float param_b) override;
 
 			//函数名： getParamReflectFilter
-			//功能： 获取亮度图增益
+			//功能： 获取反射滤波参数
 			//输入参数：无
 			//输出参数：use(开关：1开、0关)、param_b（过滤系数：范围0-100）
 			//返回值： 类型（int）:返回0表示设置参数成功;否则失败。
