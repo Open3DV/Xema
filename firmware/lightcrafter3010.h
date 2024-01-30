@@ -206,10 +206,12 @@ class LightCrafter3010
 private:
 	I2CDevice _device;
 	I2CDevice _MCP3221;
+    I2CDevice _MCU3221;
 	size_t read_with_param(char inner_addr,unsigned char param, void* buffer, size_t buffer_size);
 	size_t read(char inner_addr, void* buffer, size_t buffer_size);
 	size_t write(char inner_addr, void* buffer, size_t buffer_size);
 	size_t read_mcp3221(void* buffer, size_t buffer_size);
+	size_t read_mcu3221(void* buffer, size_t buffer_size);
 	float lookup_table(float fRntc);
 
 public:
@@ -268,6 +270,7 @@ public:
 	void read_data_from_the_flash(unsigned char readFlashCmd, char *RxBuffer, unsigned short dataLen);
 	void reload_pattern_order_table_from_flash();
 	float get_projector_temperature();
+	float get_projector_temperature_by_mcu();
 
 	void set_camera_exposure(float exposure){
 		camera_exposure_ = exposure;
