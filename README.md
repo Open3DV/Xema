@@ -79,9 +79,14 @@
     </tr>
 </table>
 
+[更多型号参数 More camera models](https://github.com/Open3DV/Xema/wiki/DexSense)<br>
+[物料清单 Bill of Materials](https://github.com/Open3DV/Xema/wiki/BOM.csv)<br>
+[XEMA系列相机接口文档](https://github.com/Open3DV/Xema/wiki/SDK) [Interface Document of XEMA](https://github.com/Open3DV/Xema/wiki/Interface-Document-of-XEMA)<br>
+[XEMA系列相机搭建指南](https://github.com/Open3DV/Xema/wiki/guidebook)<br>
+
 <img src='images/modules.jpg' width=800>
 
-## Structural Design Files
+## 结构件设计文件 Structural Design Files
 <img src='https://github.com/Open3DV/xema_hardware/blob/main/image/XEMA-S assembly.png' width=300><br> 
 <a href='https://github.com/Open3DV/xema_hardware/blob/main/step/XEMA-S%20assembly.stp'>XEMA-S scanning range (400mm-1000mm) step file </a> <a href='https://evercraft.co/share?key=502244'> (view online) </a>
 <br> <br> 
@@ -96,14 +101,17 @@
 <a href='https://github.com/Open3DV/xema_hardware/blob/main/step/XEMA-L%20structural%20components.stp'> XEMA-L structural components step file </a>
 <a href='https://evercraft.co/share?key=167319'> (view online) </a>
 <br> 
-## PCB Design Files(Pads format)
+## 电路设计文件 PCB Design Files(Pads format)
 <a href='https://github.com/Open3DV/xema_hardware/blob/main/pcb/XEMA%20Jetson%20Nano%20Carrier%20Board.pcb'>XEMA Jetson Nano carrier board  layout (pcb)</a>
 <br> <a href='https://github.com/Open3DV/xema_hardware/blob/main/pcb/XEMA%20Jetson%20Nano%20Carrier%20Board.sch'>XEMA Jetson Nano carrier board schematics (sch)</a>
 
-### Purchase XEMA camera or its DIY kit in the Taobao links below:<br>
+## 淘宝购买链接 Purchase XEMA camera or its DIY kit in the Taobao links below:<br>
 <a href='https://item.taobao.com/item.htm?spm=a230r.7195193.1997079397.8.3dc842deinrFRl&id=693155032629&abbucket=6'>XEMA-S / XEMA-L Camera </a><br>
 <a href='https://item.taobao.com/item.htm?spm=2013.1.w4004-24671353614.6.243b11c2sjZSTQ&id=694002907610'>XEMA-S DIY kits</a><br>
 <a href='https://item.taobao.com/item.htm?spm=a230r.7195193.1997079397.9.3dc842deinrFRl&id=693408027639&abbucket=6'>XEMA-L DIY kits</a><br>
+
+## XEMA相机DIY视频教程 -- XEMA camera DIY video tutorial (youtube/youku)
+[Video Tutorial](https://github.com/Open3DV/Xema/discussions/42)
 
 ## Contact:
 <img src='images/logo/dexforce.png' width=150 ></img><br>
