@@ -201,6 +201,12 @@ const float R_table[R_TABLE_NUM] = {
     2.759	,    //	125
 };
 
+enum class TemperatureHandle 
+{
+	MCP = 0,
+	MCU = 1,
+};
+
 class LightCrafter3010
 {
 private:
@@ -271,6 +277,8 @@ public:
 	void reload_pattern_order_table_from_flash();
 	float get_projector_temperature();
 	float get_projector_temperature_by_mcu();
+	float get_projector_temperature_by_mcp();
+	size_t read_mcu_version(void* buffer, size_t buffer_size);
 
 	void set_camera_exposure(float exposure){
 		camera_exposure_ = exposure;
@@ -284,5 +292,7 @@ private:
 	float camera_exposure_;
     float dlp_min_exposure_;
     float camera_min_exposure_;
+
+    TemperatureHandle read_temperature_handle_ = TemperatureHandle::MCP;
 };
 

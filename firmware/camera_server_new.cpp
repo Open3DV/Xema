@@ -6149,7 +6149,7 @@ int handle_get_projector_temperature(int client_sock)
 
     LOG(INFO)<<"get projector temperature!";
 
-    float temperature = lc3010.get_projector_temperature_by_mcu();
+    float temperature = lc3010.get_projector_temperature();
 
     int ret = send_buffer(client_sock, (char*)(&temperature), sizeof(temperature));
     if(ret == DF_FAILED)

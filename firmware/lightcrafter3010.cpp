@@ -7,6 +7,8 @@
 #include "math.h"
 #include "protocol.h"
 
+
+
 LightCrafter3010::LightCrafter3010()
 {
 	int fd;
@@ -51,6 +53,21 @@ LightCrafter3010::LightCrafter3010()
 
     dlp_min_exposure_ = 1700;
     camera_min_exposure_ = 6000;
+
+    unsigned char version_buffer[4]={0,0,0,0};
+    int size = read_mcu_version(version_buffer, 4);
+    LOG(INFO)<<"read_mcu_version: "<<size;
+    LOG(INFO)<<"read_mcu_version: "<<version_buffer[0];
+    LOG(INFO)<<"read_mcu_version: "<<version_buffer[1];
+    LOG(INFO)<<"read_mcu_version: "<<version_buffer[2];
+    LOG(INFO)<<"read_mcu_version: "<<version_buffer[3];
+    if(4 == size)
+    {
+        if('v' == version_buffer[0] )
+        {
+           read_temperature_handle_ = TemperatureHandle::MCU; 
+        }
+    }
 }
  
 size_t LightCrafter3010::read_with_param(char inner_addr,unsigned char param, void* buffer, size_t buffer_size)
@@ -1007,6 +1024,10 @@ float LightCrafter3010::get_temperature()
     return temperature;
 }
 
+size_t LightCrafter3010::read_mcu_version(void* buffer, size_t buffer_size)
+{ 
+	return	i2c_read(&_MCU3221, 0xf0, buffer, buffer_size);
+}
 
 size_t LightCrafter3010::read_mcu3221(void* buffer, size_t buffer_size)
 {
@@ -1089,14 +1110,14 @@ float LightCrafter3010::get_projector_temperature_by_mcu()
     return temperature;
 }
 
-float LightCrafter3010::get_projector_temperature()
+float LightCrafter3010::get_projector_temperature_by_mcp()
 {
     unsigned char buffer[2];
     int size = read_mcp3221(buffer, 2);
 
     short OutputCode;
     float temperature;
-    if (size == 2) 
+    if (size == 2)
     {
         OutputCode = ((buffer[0] << 8) & 0xff00) | buffer[1];
         printf("The AD data = 0x%x = %d\n", OutputCode, OutputCode);
@@ -1108,11 +1129,36 @@ float LightCrafter3010::get_projector_temperature()
 
         temperature = lookup_table(fRntc);
         temperature = (temperature >= 125.0) ? -125.0 : temperature;
-    } 
+    }
     else
     {
         temperature = -100;
     }
 
     return temperature;
+}
+
+float LightCrafter3010::get_projector_temperature()
+{
+    switch (read_temperature_handle_)
+    {
+    case TemperatureHandle::MCP:
+    {
+        LOG(INFO)<<"READ BY MCP";
+        return get_projector_temperature_by_mcp();
+    }
+    break;
+    case TemperatureHandle::MCU:
+    {
+        LOG(INFO)<<"READ BY MCU";
+        return get_projector_temperature_by_mcu();
+    }
+    break;
+
+    default:
+        LOG(INFO)<<"READ BY default";
+        break;
+    }
+
+    return get_projector_temperature_by_mcp();
 }
