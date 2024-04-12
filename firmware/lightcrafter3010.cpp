@@ -63,7 +63,7 @@ LightCrafter3010::LightCrafter3010()
     LOG(INFO)<<"read_mcu_version: "<<version_buffer[3];
     if(4 == size)
     {
-        if('v' == version_buffer[0] )
+        if('V' == version_buffer[0] &&'1' ==  version_buffer[1] )
         {
            read_temperature_handle_ = TemperatureHandle::MCU; 
         }
