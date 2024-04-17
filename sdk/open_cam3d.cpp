@@ -31,7 +31,7 @@ using namespace std::chrono;
 //socket
 INITIALIZE_EASYLOGGINGPP
 
-XemaEngine engine_ = XemaEngine::Normal;
+XemaEngine engine_ = XemaEngine::Reflect;
 
 XemaPixelType pixel_type_ = XemaPixelType::Mono;
 

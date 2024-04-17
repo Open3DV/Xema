@@ -456,7 +456,7 @@ extern "C" {
 		private:
 			int (*p_OnDropped_)(void*) = 0;
 
-			XemaEngine engine_ = XemaEngine::Normal;
+			XemaEngine engine_ = XemaEngine::Reflect;
 
 			XemaPixelType pixel_type_ = XemaPixelType::Mono;
 
