@@ -46,6 +46,8 @@ public:
 
 	void getFirmwareVersion(QString& version);
 
+	void getSdkVersionNumber(QString& version);
+
 	void getProductInfo(QString& info);
 
 	void setOnDrop(int (*p_function)(void*));
@@ -383,6 +385,8 @@ private:
 
 	QString firmware_version_;
 	char info_[INFO_SIZE] = {'\0'};
+	QString firmware_v_num_ = "";
+	QString sdk_v_num_ = "";
 
 	SaveDataType save_data_type_ = SaveDataType::Origin;
 	bool hide_save_gui_flag_ = false;

@@ -26,6 +26,7 @@ calibration.exe --calibrate --use patterns-c --path ./capture/calib --version 30
 \n\
 5.Correct:\n\
 calibration.exe --correct --use patterns --path ./capture/calib --version 3010 --board 20 --param-in ./param.txt --param-out ./param.txt \n\
+\n\
 6.Correct:\n\
 calibration.exe --correct --use patterns-c --path ./capture/calib --version 3010 --board 20 --param-in ./param.txt --param-out ./param.txt \n\
 \n\

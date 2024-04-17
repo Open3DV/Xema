@@ -199,8 +199,11 @@ void camera_gui::do_action_about()
 {
 	AboutGui about_gui;
 	QString version;
+	QString sdk_v_num;
 	ui.tab_capture->getFirmwareVersion(version);
+	ui.tab_capture->getSdkVersionNumber(sdk_v_num);
 	about_gui.setFirmwareVersion(version);
+	about_gui.setSdkVersion(sdk_v_num);
 	about_gui.updateVersion();
 	QString info;
 	ui.tab_capture->getProductInfo(info);

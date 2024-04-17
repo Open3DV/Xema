@@ -432,6 +432,13 @@ extern "C"
 	//返回值： 类型（int）:返回0表示设置参数成功;否则失败。
 	DF_SDK_API int DfGetSdkVersion(char version[64]);
 
+	//函数名：  DfGetFirmwareVersion
+	//功能：    获取固件版本
+	//输入参数：无
+	//输出参数：version(版本)
+	//返回值：  类型（int）:返回0表示连接成功;返回-1表示连接失败.
+	DF_SDK_API int DfGetFirmwareVersion(char version[64]);
+
 	//函数名： DfCaptureBrightnessData
 	//功能： 获取亮度图
 	//输入参数：color(图像颜色类型)
