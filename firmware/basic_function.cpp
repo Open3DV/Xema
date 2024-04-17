@@ -15,7 +15,7 @@ void initVersion();
 int inquireVersion(std::string git_version, std::string& version)
 {
 
-	LOG(INFO) << "git version: " << git_version << std::endl;
+	LOG(INFO) << "git version: " << git_version;
 	std::vector<std::string> tokens;
 	std::stringstream ss(git_version);
 	std::string token;
@@ -50,8 +50,8 @@ int inquireVersion(std::string git_version, std::string& version)
 		{
 			std::string version_str = "";
 			for (const auto& map : map_version_) {
-				std::cout << "Key: " << map.first << ", Value: " << map.second << std::endl;
-				std::cout << "compare: " << (tokens[position].compare(map.first)) << std::endl;
+				// std::cout << "Key: " << map.first << ", Value: " << map.second << std::endl;
+				// std::cout << "compare: " << (tokens[position].compare(map.first)) << std::endl;
 
 				if (0 > tokens[position].compare(map.first))
 				{
