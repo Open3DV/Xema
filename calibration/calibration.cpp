@@ -27,6 +27,9 @@ calibration.exe --calibrate --use patterns-c --path ./capture/calib --version 30
 5.Correct:\n\
 calibration.exe --correct --use patterns --path ./capture/calib --version 3010 --board 20 --param-in ./param.txt --param-out ./param.txt \n\
 \n\
+6.Correct:\n\
+calibration.exe --correct --use patterns-c --path ./capture/calib --version 3010 --board 20 --param-in ./param.txt --param-out ./param.txt \n\
+\n\
 ";
 
 int dlp_width = 1920;
@@ -986,7 +989,7 @@ bool correct_stereo_color(std::string patterns_path, std::string in_path, std::s
 		cv::Mat bayer = cv::imread(g_image_list.back(), 0);
 		  
 		cv::Mat board_img;
-		convertBayer2Gray(bayer, board_img);   
+		convertBayer2Blue(bayer, board_img);
 
 		board_images_list.push_back(board_img);
 		folder_list.push_back(current_folder_list[b_i]);

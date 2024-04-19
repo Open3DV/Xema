@@ -18,6 +18,7 @@
 #include <QtWidgets/QHeaderView>
 #include <QtWidgets/QLabel>
 #include <QtWidgets/QTextBrowser>
+#include "QtWidgets/qformlayout.h"
 
 QT_BEGIN_NAMESPACE
 
@@ -36,31 +37,49 @@ public:
         if (AboutGui->objectName().isEmpty())
             AboutGui->setObjectName(QStringLiteral("AboutGui"));
         AboutGui->resize(700, 493);
-        textBrowser = new QTextBrowser(AboutGui);
-        textBrowser->setObjectName(QStringLiteral("textBrowser"));
-        textBrowser->setGeometry(QRect(19, 140, 662, 331));
-        label = new QLabel(AboutGui);
+        QVBoxLayout* layout = new QVBoxLayout();
+        QFormLayout* layout_form = new QFormLayout();
+
+
+        label = new QLabel();
         label->setObjectName(QStringLiteral("label"));
         label->setGeometry(QRect(20, 20, 91, 31));
         QFont font;
         font.setPointSize(10);
         label->setFont(font);
-        label_2 = new QLabel(AboutGui);
+        label_2 = new QLabel();
         label_2->setObjectName(QStringLiteral("label_2"));
         label_2->setGeometry(QRect(20, 60, 81, 31));
         label_2->setFont(font);
-        label_client_verson = new QLabel(AboutGui);
+        label_client_verson = new QLabel();
         label_client_verson->setObjectName(QStringLiteral("label_client_verson"));
         label_client_verson->setGeometry(QRect(110, 24, 571, 21));
         label_client_verson->setFont(font);
-        label_firmware_version = new QLabel(AboutGui);
+        label_firmware_version = new QLabel();
         label_firmware_version->setObjectName(QStringLiteral("label_firmware_version"));
         label_firmware_version->setGeometry(QRect(110, 65, 571, 20));
         label_firmware_version->setFont(font);
-        groupBox = new QGroupBox(AboutGui);
+
+        layout_form->addRow(label, label_client_verson);
+        layout_form->addRow(label_2, label_firmware_version);
+        layout_form->setVerticalSpacing(16);
+
+        QVBoxLayout* layout_txt = new QVBoxLayout();
+        groupBox = new QGroupBox();
         groupBox->setObjectName(QStringLiteral("groupBox"));
         groupBox->setGeometry(QRect(10, 120, 680, 362));
         groupBox->setFont(font);
+        groupBox->setLayout(layout_txt);
+
+        textBrowser = new QTextBrowser();
+        textBrowser->setObjectName(QStringLiteral("textBrowser"));
+        textBrowser->setGeometry(QRect(19, 140, 662, 331));
+
+        layout_txt->addWidget(textBrowser);
+        layout->addLayout(layout_form);
+        layout->addWidget(groupBox);
+        layout->setSpacing(16);
+        AboutGui->setLayout(layout);
 
         retranslateUi(AboutGui);
 

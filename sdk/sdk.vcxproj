@@ -19,6 +19,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\firmware\basic_function.cpp" />
     <ClCompile Include="..\firmware\easylogging++.cc" />
     <ClCompile Include="..\test\triangulation.cpp" />
     <ClCompile Include="open_cam3d.cpp" />

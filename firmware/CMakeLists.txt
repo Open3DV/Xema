@@ -76,6 +76,7 @@ add_executable(camera_server
                     power_controller.cpp
                     minsw.cu
                     ../test/triangulation.cpp
+                    basic_function.cpp
                     )
 target_sources(camera_server PUBLIC "../test/LookupTableFunction.cpp") 
 target_link_libraries(camera_server PRIVATE Threads::Threads)

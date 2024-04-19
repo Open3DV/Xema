@@ -378,6 +378,13 @@ extern "C" {
 			//返回值： 类型（int）:返回0表示设置参数成功;否则失败。
 			virtual int getSdkVersion(char version[64]) = 0;
 
+			//函数名： getFirmwareVersion
+			//功能： 获取固件版本
+			//输入参数：无
+			//输出参数：version(版本)
+			//返回值： 类型（int）:返回0表示设置参数成功;否则失败。
+			virtual int getFirmwareVersion(char version[64]) = 0;
+
 			//函数名： DfCaptureBrightnessData
 			//功能： 获取亮度图
 			//输入参数： color(图像颜色类型)

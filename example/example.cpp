@@ -33,7 +33,7 @@ int main()
 	 
 	//连接相机 
 	ret_code = DfConnect(pBaseinfo[0].ip);
-	//ret_code = DfConnect("192.168.100.36");
+	//ret_code = DfConnect("192.168.0.108");
 
 	int width = 0, height = 0,channels = 1; 
 	if (0 == ret_code)
@@ -50,6 +50,9 @@ int main()
 		std::cout << "Connect Camera Error!";
 		return -1;
 	}
+
+	DfGetFirmwareVersion(version);
+	std::cout << "firmware version: " << version << std::endl;
 
 	//获取相机的标定参数
 	CalibrationParam calib_param;
