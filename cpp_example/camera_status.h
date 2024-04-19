@@ -19,5 +19,6 @@
 #define DF_FRAME_CAPTURING  			                        	     -14
 #define DF_ERROR_LOST_TRIGGER  			                        	     -15
 #define DF_ERROR_LOST_PATTERN_SETS  			                     	 -16
+#define DF_ERROR_INVALID_VERSION	  			                     	 -17
 
 #endif

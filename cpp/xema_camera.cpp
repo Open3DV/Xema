@@ -3,6 +3,8 @@
 #include "../sdk/camera_status.h"
 #include "../firmware/protocol.h"
 #include "../test/triangulation.h"
+#include "../firmware/basic_function.h"
+#include "../firmware/version.h"
 #include <chrono>
 #include <ctime>
 #include <time.h>
@@ -3540,8 +3542,97 @@ namespace XEMA {
 	int XemaCamera::getSdkVersion(char version[64])
 	{
 
-		std::strcpy(version, "v1.5.2");
+		//std::strcpy(version, "v1.5.2");
+
+		std::string in_version = "";
+		int ret_code = inquireVersion(std::string(_VERSION_), in_version);
+		if (DF_SUCCESS != ret_code)
+		{
+			LOG(ERROR) << "get firmware version";
+			return DF_ERROR_INVALID_VERSION;
+		}
+		std::memcpy(version, in_version.c_str(), in_version.size());
+
+		return ret_code;
+
 		return DF_SUCCESS;
+	}
+
+
+	int XemaCamera::getFirmwareVersion(char* pVersion, int length)
+	{
+		std::unique_lock<std::timed_mutex> lck(command_mutex_, std::defer_lock);
+		while (!lck.try_lock_for(std::chrono::milliseconds(1)))
+		{
+			LOG(INFO) << "--";
+		}
+
+		int ret = setup_socket(camera_ip_.c_str(), DF_PORT, g_sock);
+		if (ret == DF_FAILED)
+		{
+			close_socket(g_sock);
+			return DF_FAILED;
+		}
+		ret = send_command(DF_CMD_GET_FIRMWARE_VERSION, g_sock);
+		ret = send_buffer((char*)&token, sizeof(token), g_sock);
+		int command;
+		ret = recv_command(&command, g_sock);
+		if (ret == DF_FAILED)
+		{
+			LOG(ERROR) << "Failed to recv command";
+			close_socket(g_sock);
+			return DF_FAILED;
+		}
+
+		if (command == DF_CMD_OK)
+		{
+			ret = recv_buffer(pVersion, length, g_sock);
+			if (ret == DF_FAILED)
+			{
+				close_socket(g_sock);
+				return DF_FAILED;
+			}
+		}
+		else if (command == DF_CMD_REJECT)
+		{
+			close_socket(g_sock);
+			return DF_BUSY;
+		}
+
+		close_socket(g_sock);
+		return DF_SUCCESS;
+	}
+
+
+	//函数名： getFirmwareVersion
+	//功能： 获取固件版本
+	//输入参数：无
+	//输出参数：version(版本)
+	//返回值： 类型（int）:返回0表示设置参数成功;否则失败。 
+	int XemaCamera::getFirmwareVersion(char version[64])
+	{
+
+		//std::strcpy(version, "v1.5.2");
+
+		char version_git[500] = {}; 
+		int ret_code = getFirmwareVersion(version_git, 500);
+		if (DF_SUCCESS != ret_code)
+		{
+			LOG(ERROR) << "get firmware version";
+			return DF_ERROR_INVALID_VERSION;
+		}
+
+
+		std::string in_version = "";
+		ret_code = inquireVersion(std::string(version_git), in_version);
+		if (DF_SUCCESS != ret_code)
+		{
+			LOG(ERROR) << "get firmware version";
+			return DF_ERROR_INVALID_VERSION;
+		}
+		std::memcpy(version, in_version.c_str(), in_version.size());
+
+		return ret_code;
 	}
  
 	int XemaCamera::getParamBrightnessGain(float& gain)

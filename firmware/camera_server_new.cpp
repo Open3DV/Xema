@@ -21,6 +21,7 @@
 #include "socket_tcp.h"
 #include <dirent.h>
 #include "power_controller.h"
+#include "basic_function.h"
 
 
 INITIALIZE_EASYLOGGINGPP
@@ -329,6 +330,14 @@ float read_temperature(int flag)
 
 int handle_cmd_connect(int client_sock)
 {
+    std::string in_version = "";
+    int ret_code = inquireVersion(std::string(_VERSION_), in_version);
+    if (DF_SUCCESS != ret_code)
+    {
+        LOG(ERROR) << "get firmware version"; 
+    }
+    LOG(INFO) << "version: " << in_version;
+
     int ret;
     if (connected)
     {
@@ -446,6 +455,14 @@ int check_token(int client_sock)
 
 int handle_cmd_disconnect(int client_sock)
 {
+    std::string in_version = "";
+    int ret_code = inquireVersion(std::string(_VERSION_), in_version);
+    if (DF_SUCCESS != ret_code)
+    {
+        LOG(ERROR) << "get firmware version"; 
+    }
+    LOG(INFO) << "version: " << in_version;
+    
     LOG(INFO) << "handle_cmd_disconnect";
     long long token = 0;
     int ret = recv_buffer(client_sock, (char *)&token, sizeof(token));
@@ -6771,6 +6788,14 @@ int init()
 
     set_projector_version(version);
     // LOG(INFO)<<"camera version: "<<DFX_800;
+ 
+    std::string in_version = "";
+    int ret_code = inquireVersion(std::string(_VERSION_), in_version);
+    if (DF_SUCCESS != ret_code)
+    {
+        LOG(ERROR) << "get firmware version"; 
+    }
+    LOG(INFO) << "version: " << in_version;
 
     return ret;
 }

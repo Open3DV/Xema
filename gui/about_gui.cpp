@@ -32,9 +32,15 @@ void AboutGui::setFirmwareVersion(QString version)
 	firmware_version = version;
 }
 
+void AboutGui::setSdkVersion(QString version)
+{
+	sdk_v_num_ = version;
+}
+
 void AboutGui::updateVersion()
 {
-	ui.label_client_verson->setText(_VERSION_);
+	QString str = " " + sdk_v_num_;
+	ui.label_client_verson->setText(_VERSION_  + str);
 	ui.label_firmware_version->setText(firmware_version);
 }
 

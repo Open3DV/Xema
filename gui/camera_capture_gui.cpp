@@ -173,7 +173,12 @@ void CameraCaptureGui::getCameraIp(QString& ip)
 
 void CameraCaptureGui::getFirmwareVersion(QString& version)
 {
-	version = QString(firmware_version_);
+	version = QString(firmware_version_ + " " + firmware_v_num_);
+}
+ 
+void CameraCaptureGui::getSdkVersionNumber(QString& version)
+{
+	version = sdk_v_num_;
 }
 
 void CameraCaptureGui::getProductInfo(QString& info)
@@ -2948,7 +2953,26 @@ void  CameraCaptureGui::do_pushButton_connect()
 					break;
 				}
 
+				char firmware_version[64];
+				char sdk_version[64];
+
+				ret_code = DfGetFirmwareVersion(firmware_version);
+				if (DF_SUCCESS != ret_code)
+				{
+					qDebug() << "Get Firmware Version Error!;";
+					break;
+				}
+
+				ret_code = DfGetSdkVersion(sdk_version);
+				if (DF_SUCCESS != ret_code)
+				{
+					qDebug() << "Get Sdk Version Error!;";
+					break;
+				}
+
 				firmware_version_ = QString(version);
+				firmware_v_num_ = QString(firmware_version);
+				sdk_v_num_ = QString(sdk_version);
 
 				ret_code = DfGetProductInfo(info_, INFO_SIZE);
 				if (DF_SUCCESS != ret_code)

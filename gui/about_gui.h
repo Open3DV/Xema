@@ -3,6 +3,7 @@
 #include <QDialog>
 #include "about.h"
 #include "../firmware/version.h"
+//#include "about_gui.h"
 
 class AboutGui : public QDialog
 {
@@ -13,6 +14,8 @@ public:
 	~AboutGui();
 
 	void setFirmwareVersion(QString version);
+
+	void setSdkVersion(QString version);
 
 	void updateVersion();
 
@@ -25,8 +28,10 @@ private slots:
 
 private:
 	Ui::AboutGui ui;
+	 
 
 	QString firmware_version;
+	QString sdk_v_num_="";
 	QString product_info;
 };
 

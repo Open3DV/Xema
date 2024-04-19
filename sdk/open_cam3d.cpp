@@ -14,6 +14,8 @@
 #include "../firmware/system_config_settings.h"
 #include <configuring_network.h>
 #include "xema_enums.h"
+#include "../firmware/version.h"
+#include "../firmware/basic_function.h"
 
 #ifdef _WIN32 
  
@@ -29,7 +31,7 @@ using namespace std::chrono;
 //socket
 INITIALIZE_EASYLOGGINGPP
 
-XemaEngine engine_ = XemaEngine::Normal;
+XemaEngine engine_ = XemaEngine::Reflect;
 
 XemaPixelType pixel_type_ = XemaPixelType::Mono;
 
@@ -85,6 +87,8 @@ float* distorted_map_y_ = NULL;
 
 unsigned char* rgb_buf_ = NULL;
 bool bayer_to_rgb_flag_ = false;
+
+
 /**************************************************************************************************************************/
 
 std::time_t getTimeStamp(long long& msec)
@@ -4430,6 +4434,90 @@ DF_SDK_API int DfSelfTest(char* pTest, int length)
 	return DF_SUCCESS;
 }
 
+
+//函数名：  DfGetFirmwareVersion
+//功能：    获取固件版本
+//输入参数：无
+//输出参数：version(版本)
+//返回值：  类型（int）:返回0表示连接成功;返回-1表示连接失败.
+DF_SDK_API int DfGetFirmwareVersion(char version[64])
+{
+	char version_git[500] = {};
+
+	int ret_code = DfGetFirmwareVersion(version_git, 500);
+	if (DF_SUCCESS != ret_code)
+	{
+		LOG(ERROR) << "get firmware version";
+		return DF_ERROR_INVALID_VERSION;
+	}
+
+
+	std::string in_version = "";
+	ret_code = inquireVersion(std::string(version_git), in_version);
+	if (DF_SUCCESS != ret_code)
+	{
+		LOG(ERROR) << "get firmware version";
+		return DF_ERROR_INVALID_VERSION;
+	}
+	std::memcpy(version, in_version.c_str(), in_version.size());
+
+	return ret_code;
+
+	///*std::vector<std::string> tokens;
+	//std::stringstream ss(version_git);
+	//std::string token;
+
+	//while (std::getline(ss, token, ' ')) {
+	//	tokens.push_back(token);
+	//}
+
+	//int position = -1;
+	//auto it = std::find(tokens.begin(), tokens.end(), "commit:");
+	//if (it != tokens.end())
+	//{ 
+	//	position = it - tokens.begin();
+	//	position += 1;
+	//} 
+
+	//if (-1 != position && position< tokens.size())
+	//{
+	//	std::cout << "Time: " << tokens[position]<<std::endl;
+
+	//	initVersion();
+
+	//	std::map<std::string, std::string>::iterator iter;
+
+	//	iter = map_version_.find(tokens[position]);
+
+	//	if (map_version_.end() != iter)
+	//	{
+	//		std::string second = iter->second;
+	//		std::memcpy(version, second.c_str(), second.size());
+	//	}
+	//	else
+	//	{
+	//		std::string version_str = "";
+	//		for (const auto& map : map_version_) {
+	//			std::cout << "Key: " << map.first << ", Value: " << map.second << std::endl;
+	//			std::cout << "compare: " << (tokens[position].compare(map.first)) << std::endl;
+	//			version_str = map.second;
+
+	//			if (0 > tokens[position].compare(map.first))
+	//			{
+	//				break;
+	//			}
+	//		}
+	//		std::memcpy(version, version_str.c_str(), version_str.size());
+
+	//		return DF_ERROR_INVALID_VERSION;
+	//	}*/ 
+	// 
+	//}
+
+	 
+	return DF_SUCCESS;
+}
+
 // --------------------------------------------------------------
 DF_SDK_API int DfGetFirmwareVersion(char* pVersion, int length)
 {
@@ -6544,9 +6632,21 @@ DF_SDK_API int DfGetParamCameraGain(float& gain)
 //返回值： 类型（int）:返回0表示设置参数成功;否则失败。
 DF_SDK_API int DfGetSdkVersion(char version[64])
 {
-	std::strcpy(version, "v1.5.2"); 
+	//std::strcpy(version, "v1.5.2"); 
 
-	return DF_SUCCESS;
+
+	std::string in_version = "";
+	int ret_code = inquireVersion(std::string(_VERSION_), in_version);
+	if (DF_SUCCESS != ret_code)
+	{
+		LOG(ERROR) << "get firmware version";
+		return DF_ERROR_INVALID_VERSION;
+	}
+	std::memcpy(version, in_version.c_str(), in_version.size());
+
+	return ret_code;
+	  
+	 
 }
 
 //函数名： DfCaptureBrightnessData

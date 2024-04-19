@@ -171,6 +171,7 @@ copy $(ProjectDir)..\sdk\camera_status.h $(ProjectDir)..\cpp_example</Command>
     <ClInclude Include="xema_camera.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\firmware\basic_function.cpp" />
     <ClCompile Include="..\firmware\easylogging++.cc" />
     <ClCompile Include="..\firmware\system_config_settings.cpp" />
     <ClCompile Include="..\sdk\socket_tcp.cpp" />

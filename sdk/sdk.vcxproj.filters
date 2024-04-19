@@ -30,6 +30,9 @@
     <ClCompile Include="..\firmware\easylogging++.cc">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="..\firmware\basic_function.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="socket_tcp.h">
